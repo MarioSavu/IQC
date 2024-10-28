@@ -80,7 +80,7 @@ qbit H_gate(qbit in) {
     return matrix22_qbit_product(gate_h, in);
 }
 
-qbit CNOT_gate(qbit ctrl_in, qbit target_in) {
+qbit2 CNOT_gate(qbit ctrl_in, qbit target_in) {
     qbit out;
     cnum gate_cnot[4][4];
 
@@ -139,18 +139,39 @@ qbit CNOT_gate(qbit ctrl_in, qbit target_in) {
     ctrl_target_product.amp[2] = cnum_product(ctrl_in.one,  target_in.zero);
     ctrl_target_product.amp[3] = cnum_product(ctrl_in.one,  target_in.one);
     
+    // printf("CNOT's control & target tensor product:\n"
+    //     "(%.2f%s%.2fi)*|00>\n"
+    //     "(%.2f%s%.2fi)*|01>\n"
+    //     "(%.2f%s%.2fi)*|10>\n"
+    //     "(%.2f%s%.2fi)*|11>\n\n",
+    //     ctrl_target_product.amp[0].real, (ctrl_target_product.amp[0].imaginary>=0)?"+":"",ctrl_target_product.amp[0].imaginary,
+    //     ctrl_target_product.amp[1].real, (ctrl_target_product.amp[1].imaginary>=0)?"+":"",ctrl_target_product.amp[1].imaginary,
+    //     ctrl_target_product.amp[2].real, (ctrl_target_product.amp[2].imaginary>=0)?"+":"",ctrl_target_product.amp[2].imaginary,
+    //     ctrl_target_product.amp[3].real, (ctrl_target_product.amp[3].imaginary>=0)?"+":"",ctrl_target_product.amp[3].imaginary);
+
     qbit2 computation_output = matrix44_qbit2_product(gate_cnot, ctrl_target_product);
 
     // Here would be a great place to differentiate in-between how to simulate this.
     // I can either just take the last 2 amplitudes that correspond to the target qubit which could get modified, and just return that as a qbit
     // or I could just return the whole qbit2 computation output, since these bits are probably entangled now (but I still have no clue about entanglement)
     // It should be easy to implement both, I'd just need to add a print_qbit2 and some helpers to take out either the first or 2nd qubit state of a 2 qubit state (Get either |a> or |b> from |ab>) 
+    // printf("CNOT full output:\n"
+    //     "(%.2f%s%.2fi)*|00>\n"
+    //     "(%.2f%s%.2fi)*|01>\n"
+    //     "(%.2f%s%.2fi)*|10>\n"
+    //     "(%.2f%s%.2fi)*|11>\n\n",
+    //     computation_output.amp[0].real, (computation_output.amp[0].imaginary>=0)?"+":"",computation_output.amp[0].imaginary,
+    //     computation_output.amp[1].real, (computation_output.amp[1].imaginary>=0)?"+":"",computation_output.amp[1].imaginary,
+    //     computation_output.amp[2].real, (computation_output.amp[2].imaginary>=0)?"+":"",computation_output.amp[2].imaginary,
+    //     computation_output.amp[3].real, (computation_output.amp[3].imaginary>=0)?"+":"",computation_output.amp[3].imaginary);
+       
+    // // For now, let's take out just the target amplitude and return that
+    // out.zero = cnum_copy(computation_output.amp[2]);
+    // out.one = cnum_copy(computation_output.amp[3]);
 
-    // For now, let's take out just the target amplitude and return that
-    out.zero = cnum_copy(computation_output.amp[2]);
-    out.one = cnum_copy(computation_output.amp[3]);
+    // return out;
 
-    return out;
+    return computation_output;
 }
 
 // qbit CCNOT_gate(qbit ctrl_0_in, qbit ctrl_1_in, qbit target_in) {
@@ -183,6 +204,17 @@ void print_qbit_short(qbit in) {
         in.one.real, (in.one.imaginary>=0)?"+":"",in.one.imaginary);
 }
 
+void print_qbit2_short(qbit2 in) {
+    printf("(%.2f%s%.2fi)*|00>\n"
+        "(%.2f%s%.2fi)*|01>\n"
+        "(%.2f%s%.2fi)*|10>\n"
+        "(%.2f%s%.2fi)*|11>\n\n",
+        in.amp[0].real, (in.amp[0].imaginary>=0)?"+":"",in.amp[0].imaginary,
+        in.amp[1].real, (in.amp[1].imaginary>=0)?"+":"",in.amp[1].imaginary,
+        in.amp[2].real, (in.amp[2].imaginary>=0)?"+":"",in.amp[2].imaginary,
+        in.amp[3].real, (in.amp[3].imaginary>=0)?"+":"",in.amp[3].imaginary);       
+}
+
 void print_qbit(qbit in) {
     printf("QBit state: (%.2f%s%.2fi)*|0> + (%.2f%s%.2fi)*|1>\n", 
         in.zero.real, (in.zero.imaginary>=0)?"+":"", in.zero.imaginary,
@@ -211,7 +243,7 @@ static cnum cnum_sum4(cnum one, cnum two, cnum three, cnum four) {
     cnum out;
 
     out.real = one.real + two.real + three.real + four.real;
-    out.imaginary = one.imaginary + two.imaginary + three.real + four.real;
+    out.imaginary = one.imaginary + two.imaginary + three.imaginary + four.imaginary;
 
     return out;
 }

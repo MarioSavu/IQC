@@ -6,7 +6,7 @@
 
 // #define TEST_SUITE_0
 // #define TEST_SUITE_1
-#define CIRCUIT_FIGURE_4_3
+// #define CIRCUIT_FIGURE_4_3
 
 void main() {
     qbit zero = q_zero();
@@ -69,6 +69,20 @@ void main() {
     printf("\n\n");
 #endif
 
+    qbit qb0, qb1;
+    qbit2 qb2_system;
+    qb0 = q_zero();
+    qb1 = q_zero();
+    qb0 = H_gate(qb0);
+    printf("Q0: ");print_qbit_short(qb0);printf("\n");
+    printf("Q1: ");print_qbit_short(qb1);printf("\n");
+    printf("\n");
+    qb2_system = CNOT_gate(qb0, qb1);
+    // printf("Q0: ");print_qbit_short(qb0);printf("\n");
+    // printf("Q1: ");print_qbit_short(qb1);printf("\n");
+    printf("2 Qubit system state after CNOT: \n"); print_qbit2_short(qb2_system);printf("\n");
+
+
 
 #ifdef CIRCUIT_FIGURE_4_3
     // Initialize system states for 4 qbits
@@ -122,7 +136,6 @@ void main() {
     printf("Q1: ");print_qbit_short(q1);printf("\n");
     printf("Q2: ");print_qbit_short(q2);printf("\n");
     printf("Q3: ");print_qbit_short(q3);printf("\n\n");
-
 #endif
 
     return;

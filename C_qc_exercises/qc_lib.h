@@ -14,11 +14,19 @@ typedef struct quantum_bit_2 {
     cnum amp[4]; // Amplitudes for each possible 2 qubit states (00, 01, 10, 11)
 } qbit2;
 
+typedef struct quantum_bit_3 {
+    cnum amp[8]; // Amplitudes for each possible 2 qubit states (00, 01, 10, 11)
+} qbit3;
+
+typedef struct quantum_bit_4 {
+    cnum amp[16]; // Amplitudes for each possible 2 qubit states (00, 01, 10, 11)
+} qbit4;
+
 qbit X_gate(qbit in);
 qbit Y_gate(qbit in);
 qbit Z_gate(qbit in);
 qbit H_gate(qbit in);
-qbit CNOT_gate(qbit ctrl_in, qbit target_in);
+qbit2 CNOT_gate(qbit ctrl_in, qbit target_in);
 // qbit CCNOT_gate(qbit ctrl_0_in, qbit ctrl_1_in, qbit target_in);
 
 qbit q_zero();
@@ -26,6 +34,7 @@ qbit q_one();
 
 void print_qbit(qbit in);
 void print_qbit_short(qbit in);
+void print_qbit2_short(qbit2 in);
 
 // Private helper functions
 static cnum cnum_copy(cnum one);
