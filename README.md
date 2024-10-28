@@ -19,7 +19,11 @@ The quantum simulation library will have APIs for:
 - Measuring the final (or really any intermediary) state (probably like shown below)
 
 The API might provide one or more ways of visualizing the states, right now it just supports this notation:
+
 (0.71+0.00i)*|00>
+
 (0.00+0.00i)*|01>
+
 (0.00+0.00i)*|10>
+
 (0.71+0.00i)*|11>
