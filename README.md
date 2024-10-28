@@ -27,3 +27,16 @@ The API might provide one or more ways of visualizing the states, right now it j
 (0.00+0.00i)*|10>
 
 (0.71+0.00i)*|11>
+
+
+To build & execute this project use the (TODO) Makefile's following commands:
+make              <- builds & runs the project
+make all          <- builds everything
+make clean        <- cleans everythings
+make run          <- runs the already built project (or builds & runs?)
+
+TODO:
+- Rewrite the code to be dynamic & support the API mentioned above for "step" simulation
+- Add simple examples & organize the project into proper folders
+- Add examples for some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor)
+- Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing (hopefully) full API functionality in a simple language for people that don't like C
