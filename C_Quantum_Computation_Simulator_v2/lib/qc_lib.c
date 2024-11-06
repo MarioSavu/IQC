@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
+// TODO: more input validation, e.g. check if qr exists (not NULL) in all functions
+// Enforce validation in test apps & main app also
 
 // Helper function to allocate a 2D matrix of complex numbers
 cnum **allocate_matrix(int size) {
@@ -321,6 +323,10 @@ void parse_circuit_layer(gate_list *gates, const char *operations) {
 
 
 qreg *new_qreg(int size) {
+    if (size > QUBIT_REGISTER_LIMIT) {
+        printf("Cannot support more than %d qubits currently, attempted %d\n", QUBIT_REGISTER_LIMIT, size);
+    }
+
     // Allocate memory for the quantum register
     qreg *qr = (qreg *)malloc(sizeof(qreg));
     if (qr == NULL) {
