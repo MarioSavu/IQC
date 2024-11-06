@@ -89,16 +89,80 @@ qgate *create_z_gate() {
     return gate;
 }
 
-qgate *create_hadamard_gate() {
+qgate *create_h_gate() {
     qgate *gate = malloc(sizeof(qgate));
     strncpy(gate->type, "H", sizeof(gate->type));
     gate->size = 1;
     gate->matrix = allocate_matrix(2);
-    double inv_sqrt2 = 1.0 / sqrt(2);
-    gate->matrix[0][0] = (cnum){inv_sqrt2, 0};
-    gate->matrix[0][1] = (cnum){inv_sqrt2, 0};
-    gate->matrix[1][0] = (cnum){inv_sqrt2, 0};
-    gate->matrix[1][1] = (cnum){-inv_sqrt2, 0};
+    double inv_sqrt_2 = 1.0 / sqrt(2.0);
+    gate->matrix[0][0] = (cnum){inv_sqrt_2, 0};
+    gate->matrix[0][1] = (cnum){inv_sqrt_2, 0};
+    gate->matrix[1][0] = (cnum){inv_sqrt_2, 0};
+    gate->matrix[1][1] = (cnum){-inv_sqrt_2, 0};
+    return gate;
+}
+
+qgate *create_s_gate() {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "S", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){1, 0};
+    gate->matrix[1][1] = (cnum){0, 1};
+    return gate;
+}
+
+qgate *create_t_gate() {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "T", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){1, 0};
+    gate->matrix[1][1] = (cnum){cos(M_PI / 4), sin(M_PI / 4)};
+    return gate;
+}
+
+qgate *create_rx_gate(double angle) {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "RX", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
+    gate->matrix[0][1] = (cnum){0, -sin(angle / 2)};
+    gate->matrix[1][0] = (cnum){0, -sin(angle / 2)};
+    gate->matrix[1][1] = (cnum){cos(angle / 2), 0};
+    return gate;
+}
+
+qgate *create_ry_gate(double angle) {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "RY", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
+    gate->matrix[0][1] = (cnum){-sin(angle / 2), 0};
+    gate->matrix[1][0] = (cnum){sin(angle / 2), 0};
+    gate->matrix[1][1] = (cnum){cos(angle / 2), 0};
+    return gate;
+}
+
+qgate *create_rz_gate(double angle) {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "RZ", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){cos(angle / 2), -sin(angle / 2)};
+    gate->matrix[1][1] = (cnum){cos(angle / 2), sin(angle / 2)};
+    return gate;
+}
+
+qgate *create_phase_gate(double angle) {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "P", sizeof(gate->type));
+    gate->size = 1;
+    gate->matrix = allocate_matrix(2);
+    gate->matrix[0][0] = (cnum){1, 0};
+    gate->matrix[1][1] = (cnum){cos(angle), sin(angle)};
     return gate;
 }
 
@@ -126,54 +190,135 @@ qgate *create_swap_gate() {
     return gate;
 }
 
-qgate *create_rx_gate(double theta) {
-    qgate *gate = malloc(sizeof(qgate));
-    strncpy(gate->type, "RX", sizeof(gate->type));
-    gate->size = 1;
-    gate->matrix = allocate_matrix(2);
-    double cos_half_theta = cos(theta / 2);
-    double sin_half_theta = sin(theta / 2);
-    gate->matrix[0][0] = (cnum){cos_half_theta, 0};
-    gate->matrix[0][1] = (cnum){0, -sin_half_theta};
-    gate->matrix[1][0] = (cnum){0, -sin_half_theta};
-    gate->matrix[1][1] = (cnum){cos_half_theta, 0};
-    return gate;
+void parse_circuit_layer(gate_list *gates, const char *operations) {
+    const char *op_ptr = operations;
+    char gate_type[16];
+    int qubit_1, qubit_2;
+    double angle;
+
+    while (*op_ptr != '\0') {
+        // Parse the gate type
+        if (sscanf(op_ptr, "%15[^_]_", gate_type) != 1) {
+            fprintf(stderr, "Error parsing gate type\n");
+            return;
+        }
+
+        op_ptr += strlen(gate_type) + 1;
+
+        if (strcmp(gate_type, "SWP") == 0) {
+            // Parse two qubit indices for SWP gate
+            if (sscanf(op_ptr, "%d_%d", &qubit_1, &qubit_2) != 2) {
+                fprintf(stderr, "Error parsing SWP qubits\n");
+                return;
+            }
+
+            // Ensure qubits are adjacent and the first qubit is smaller
+            if (abs(qubit_1 - qubit_2) != 1 || qubit_1 >= qubit_2) {
+                fprintf(stderr, "SWP gate only supports adjacent qubits with the first qubit smaller than the second\n");
+                return;
+            }
+
+            // Create SWP gate and add to circuit
+            qgate *swap_gate = create_swap_gate();
+            int *qubits = malloc(2 * sizeof(int));
+            qubits[0] = qubit_1;
+            qubits[1] = qubit_2;
+
+            add_gate_to_list(gates, swap_gate, qubits);
+        } else if (strcmp(gate_type, "CNOT") == 0) {
+            // Parse two qubit indices for CNOT gate
+            if (sscanf(op_ptr, "%d_%d", &qubit_1, &qubit_2) != 2) {
+                fprintf(stderr, "Error parsing CNOT qubits\n");
+                return;
+            }
+
+            // Ensure qubits are adjacent and the first qubit is smaller
+            if (abs(qubit_1 - qubit_2) != 1 || qubit_1 >= qubit_2) {
+                fprintf(stderr, "CNOT gate only supports adjacent qubits with the first qubit smaller than the second\n");
+                return;
+            }
+
+            // Create CNOT gate and add to circuit
+            qgate *cnot_gate = create_cnot_gate();
+            int *qubits = malloc(2 * sizeof(int));
+            qubits[0] = qubit_1;
+            qubits[1] = qubit_2;
+
+            add_gate_to_list(gates, cnot_gate, qubits);
+        } else if (strcmp(gate_type, "X") == 0 || strcmp(gate_type, "Y") == 0 || strcmp(gate_type, "Z") == 0 ||
+                   strcmp(gate_type, "H") == 0 || strcmp(gate_type, "S") == 0 || strcmp(gate_type, "T") == 0) {
+            // Parse single qubit index for 1-qubit gates
+            if (sscanf(op_ptr, "%d", &qubit_1) != 1) {
+                fprintf(stderr, "Error parsing %s qubit\n", gate_type);
+                return;
+            }
+
+            // Validate qubit index is non-negative
+            if (qubit_1 < 0) {
+                fprintf(stderr, "Invalid qubit index for %s gate: must be non-negative\n", gate_type);
+                return;
+            }
+
+            // Create gate and add to circuit
+            qgate *gate;
+            if (strcmp(gate_type, "X") == 0) {
+                gate = create_x_gate();
+            } else if (strcmp(gate_type, "Y") == 0) {
+                gate = create_y_gate();
+            } else if (strcmp(gate_type, "Z") == 0) {
+                gate = create_z_gate();
+            } else if (strcmp(gate_type, "H") == 0) {
+                gate = create_h_gate();
+            } else if (strcmp(gate_type, "S") == 0) {
+                gate = create_s_gate();
+            } else { // T gate
+                gate = create_t_gate();
+            }
+            
+            int *qubits = malloc(sizeof(int));
+            qubits[0] = qubit_1;
+
+            add_gate_to_list(gates, gate, qubits);
+        } else if (strcmp(gate_type, "RX") == 0 || strcmp(gate_type, "RY") == 0 || strcmp(gate_type, "RZ") == 0 || strcmp(gate_type, "P") == 0) {
+            // Parse single qubit index and angle for rotation or phase gates
+            if (sscanf(op_ptr, "%d_%lf", &qubit_1, &angle) != 2) {
+                fprintf(stderr, "Error parsing %s gate\n", gate_type);
+                return;
+            }
+
+            // Validate qubit index is non-negative
+            if (qubit_1 < 0) {
+                fprintf(stderr, "Invalid qubit index for %s gate: must be non-negative\n", gate_type);
+                return;
+            }
+
+            // Create gate and add to circuit
+            qgate *gate;
+            if (strcmp(gate_type, "RX") == 0) {
+                gate = create_rx_gate(angle);
+            } else if (strcmp(gate_type, "RY") == 0) {
+                gate = create_ry_gate(angle);
+            } else if (strcmp(gate_type, "RZ") == 0) {
+                gate = create_rz_gate(angle);
+            } else { // Phase gate
+                gate = create_phase_gate(angle);
+            }
+
+            int *qubits = malloc(sizeof(int));
+            qubits[0] = qubit_1;
+
+            add_gate_to_list(gates, gate, qubits);
+        } else {
+            fprintf(stderr, "Unsupported gate type: %s\n", gate_type);
+            return;
+        }
+
+        // Move pointer to next operation
+        while (*op_ptr != '\0' && *op_ptr != '|') op_ptr++;
+        if (*op_ptr == '|') op_ptr++;
+    }
 }
 
-qgate *create_ry_gate(double theta) {
-    qgate *gate = malloc(sizeof(qgate));
-    strncpy(gate->type, "RY", sizeof(gate->type));
-    gate->size = 1;
-    gate->matrix = allocate_matrix(2);
-    double cos_half_theta = cos(theta / 2);
-    double sin_half_theta = sin(theta / 2);
-    gate->matrix[0][0] = (cnum){cos_half_theta, 0};
-    gate->matrix[0][1] = (cnum){-sin_half_theta, 0};
-    gate->matrix[1][0] = (cnum){sin_half_theta, 0};
-    gate->matrix[1][1] = (cnum){cos_half_theta, 0};
-    return gate;
-}
-
-qgate *create_rz_gate(double theta) {
-    qgate *gate = malloc(sizeof(qgate));
-    strncpy(gate->type, "RZ", sizeof(gate->type));
-    gate->size = 1;
-    gate->matrix = allocate_matrix(2);
-    double half_theta = theta / 2;
-    gate->matrix[0][0] = (cnum){cos(half_theta), -sin(half_theta)};
-    gate->matrix[1][1] = (cnum){cos(half_theta), sin(half_theta)};
-    return gate;
-}
-
-qgate *create_phase_gate(double phi) {
-    qgate *gate = malloc(sizeof(qgate));
-    strncpy(gate->type, "P", sizeof(gate->type));
-    gate->size = 1;
-    gate->matrix = allocate_matrix(2);
-    gate->matrix[0][0] = (cnum){1, 0};
-    gate->matrix[1][1] = (cnum){cos(phi), sin(phi)};
-    return gate;
-}
 
 qreg *new_qreg(int size) {
     // Allocate memory for the quantum register
@@ -269,73 +414,6 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
     }
     return result;
 }
-
-
-void parse_circuit_layer(gate_list *gates, const char *operations) {
-    char *ops_copy = strdup(operations);
-    char *token = strtok(ops_copy, "|");
-
-    while (token != NULL) {
-        char gate_type[10];
-        int angle = 0;
-        int qubit1 = 0, qubit2 = -1;
-
-        if (sscanf(token, "CNOT_%d_%d", &qubit1, &qubit2) == 2) {
-            qgate *gate = create_cnot_gate();
-            int *qubits = malloc(2 * sizeof(int));
-            qubits[0] = qubit1;
-            qubits[1] = qubit2;
-            add_gate_to_list(gates, gate, qubits);
-
-        } else if (sscanf(token, "SWP_%d", &qubit1) == 1) {
-            qgate *gate = create_swap_gate();
-            int *qubits = malloc(2 * sizeof(int));
-            qubits[0] = qubit1;
-            qubits[1] = qubit1 + 1;
-            add_gate_to_list(gates, gate, qubits);
-
-        } else if (sscanf(token, "%[^_]_%d", gate_type, &qubit1) == 2) {
-            qgate *gate = NULL;
-            if (strcmp(gate_type, "X") == 0) gate = create_x_gate();
-            else if (strcmp(gate_type, "Y") == 0) gate = create_y_gate();
-            else if (strcmp(gate_type, "Z") == 0) gate = create_z_gate();
-            else if (strcmp(gate_type, "H") == 0) gate = create_hadamard_gate();
-            if (gate != NULL) {
-                int *qubits = malloc(sizeof(int));
-                qubits[0] = qubit1;
-                add_gate_to_list(gates, gate, qubits);
-            }
-        } else if (sscanf(token, "RX_%d_%d", &angle, &qubit1) == 2) {
-            qgate *gate = create_rx_gate(angle * M_PI / 180.0);
-            int *qubits = malloc(sizeof(int));
-            qubits[0] = qubit1;
-            add_gate_to_list(gates, gate, qubits);
-
-        } else if (sscanf(token, "RY_%d_%d", &angle, &qubit1) == 2) {
-            qgate *gate = create_ry_gate(angle * M_PI / 180.0);
-            int *qubits = malloc(sizeof(int));
-            qubits[0] = qubit1;
-            add_gate_to_list(gates, gate, qubits);
-
-        } else if (sscanf(token, "RZ_%d_%d", &angle, &qubit1) == 2) {
-            qgate *gate = create_rz_gate(angle * M_PI / 180.0);
-            int *qubits = malloc(sizeof(int));
-            qubits[0] = qubit1;
-            add_gate_to_list(gates, gate, qubits);
-
-        } else if (sscanf(token, "P_%d_%d", &angle, &qubit1) == 2) {
-            qgate *gate = create_phase_gate(angle * M_PI / 180.0);
-            int *qubits = malloc(sizeof(int));
-            qubits[0] = qubit1;
-            add_gate_to_list(gates, gate, qubits);
-        }
-
-        token = strtok(NULL, "|");
-    }
-
-    free(ops_copy);
-}
-
 
 // Function to build the full operator matrix for the circuit layer
 cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {

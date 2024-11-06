@@ -21,7 +21,7 @@ $(LIB_OBJ): $(LIB_SRC) $(LIB_HEADER)
 
 # Target for each test executable
 $(TEST_EXECUTABLES): $(LIB_OBJ)
-	$(CC) $(CFLAGS) $@.c $(LIB_OBJ) -o $@
+	$(CC) $(CFLAGS) $@.c $(LIB_OBJ) -o $@.elf
 
 # Build all tests
 .PHONY: all

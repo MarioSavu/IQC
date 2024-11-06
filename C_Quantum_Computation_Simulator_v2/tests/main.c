@@ -20,11 +20,11 @@ int main() {
     view_state_vector(qr);printf("\n");
     circuit_layer(qr, "X_0");
     view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "SWP_0");
+    circuit_layer(qr, "SWP_0_1");
     view_state_vector(qr);printf("\n");
     circuit_layer(qr, "CNOT_0_1");
     view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "SWP_0");
+    circuit_layer(qr, "SWP_0_1");
     view_state_vector(qr);printf("\n");
     circuit_layer(qr, "H_1");
     view_state_vector(qr);printf("\n");
