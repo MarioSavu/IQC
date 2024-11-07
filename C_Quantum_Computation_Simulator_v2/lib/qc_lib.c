@@ -325,6 +325,7 @@ void parse_circuit_layer(gate_list *gates, const char *operations) {
 qreg *new_qreg(int size) {
     if (size > QUBIT_REGISTER_LIMIT) {
         printf("Cannot support more than %d qubits currently, attempted %d\n", QUBIT_REGISTER_LIMIT, size);
+        return NULL;
     }
 
     // Allocate memory for the quantum register
