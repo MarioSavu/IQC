@@ -13,7 +13,7 @@ LIB_HEADER = $(LIB_DIR)/qc_lib.h
 
 # Test files
 TESTS = $(wildcard $(TESTS_DIR)/*.c)
-TEST_EXECUTABLES = $(TESTS:.c=)
+TEST_EXECUTABLES = $(patsubst %.c, %.elf, $(TESTS))
 
 # Target for creating the library object
 $(LIB_OBJ): $(LIB_SRC) $(LIB_HEADER)
@@ -21,7 +21,7 @@ $(LIB_OBJ): $(LIB_SRC) $(LIB_HEADER)
 
 # Target for each test executable
 $(TEST_EXECUTABLES): $(LIB_OBJ)
-	$(CC) $(CFLAGS) $@.c $(LIB_OBJ) -o $@.elf
+	$(CC) $(CFLAGS) $(patsubst %.elf, %.c, $@) $(LIB_OBJ) -o $@
 
 # Build all tests
 .PHONY: all
