@@ -13,28 +13,32 @@ int main() {
         return 1;
     }
 
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "H_0");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "CNOT_0_1");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "X_0");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "SWP_0_1");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "CNOT_0_1");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "SWP_0_1");
-    view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "H_1");
-    view_state_vector(qr);printf("\n");
-
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "H_0");
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "CNOT_0_1");
     // view_state_vector(qr);printf("\n");
     // circuit_layer(qr, "X_0");
     // view_state_vector(qr);printf("\n");
-    // circuit_layer(qr, "SWP_0");
+    // circuit_layer(qr, "SWP_0_1");
     // view_state_vector(qr);printf("\n");
-    // circuit_layer(qr, "SWP_0");
+    // circuit_layer(qr, "CNOT_0_1");
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "SWP_0_1");
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "H_1");
+    // view_state_vector(qr);printf("\n");
+
+    view_state_vector(qr);printf("\n");
+    circuit_layer(qr, "X_1");
+    view_state_vector(qr);printf("\n");
+    circuit_layer(qr, "SWP_1_3");
+    view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "SWP_0_2");
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "SWP_2_3");
+    // view_state_vector(qr);printf("\n");
+    // circuit_layer(qr, "SWP_0_1");
     // view_state_vector(qr);printf("\n");
 
 

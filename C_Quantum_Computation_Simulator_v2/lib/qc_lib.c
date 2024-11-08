@@ -192,7 +192,64 @@ qgate *create_swap_gate() {
     return gate;
 }
 
-void parse_circuit_layer(gate_list *gates, const char *operations) {
+qgate *create_custom_gate(cnum **matrix, int num_qubits) {
+    printf("Creating custom gate for %d qubits\n", num_qubits);
+    
+    // Allocate memory for the gate
+    qgate *gate = (qgate *)malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Error allocating memory for custom gate.\n");
+        return NULL;
+    }
+
+    // Set the number of qubits for the gate
+    gate->size = num_qubits;
+
+    // Assign the matrix to the gate (assuming the matrix is already allocated)
+    gate->matrix = matrix;
+
+    return gate;
+}
+
+
+qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
+    printf("Generating generic SWAP gate for qubits %d and %d across %d qubits\n", qubit_1, qubit_2, num_qubits);
+    
+    int size = 1 << num_qubits;  // 2^num_qubits
+    cnum **swap_matrix = allocate_matrix(size);
+    if (swap_matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for generic SWAP matrix\n");
+        return NULL;
+    }
+
+    // Initialize to identity matrix
+    for (int i = 0; i < size; i++) {
+        swap_matrix[i][i].re = 1.0;
+        swap_matrix[i][i].im = 0.0;
+    }
+
+    // Apply swaps to construct the composite matrix
+    for (int i = 0; i < size; i++) {
+        int swapped_idx = i;
+        if (((i >> qubit_1) & 1) != ((i >> qubit_2) & 1)) {
+            swapped_idx ^= (1 << qubit_1) | (1 << qubit_2);
+        }
+        swap_matrix[i][swapped_idx].re = 1.0;
+        swap_matrix[i][i].re = 0.0; // Clear original entry if swapped
+    }
+
+    qgate *swap_gate = create_custom_gate(swap_matrix, num_qubits);
+    if (swap_gate == NULL) {
+        fprintf(stderr, "Failed to create custom SWAP gate\n");
+        free_matrix(swap_matrix, size);
+        return NULL;
+    }
+
+    return swap_gate;
+}
+
+
+void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
     const char *op_ptr = operations;
     char gate_type[16];
     int qubit_1, qubit_2;
@@ -213,21 +270,30 @@ void parse_circuit_layer(gate_list *gates, const char *operations) {
                 fprintf(stderr, "Error parsing SWP qubits\n");
                 return;
             }
+            printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
-            // Ensure qubits are adjacent and the first qubit is smaller
-            if (abs(qubit_1 - qubit_2) != 1 || qubit_1 >= qubit_2) {
-                fprintf(stderr, "SWP gate only supports adjacent qubits with the first qubit smaller than the second\n");
-                return;
+
+            // Check if qubits are adjacent
+            if (abs(qubit_1 - qubit_2) == 1) {
+                // Add adjacent SWAP gate to the gate list as before
+                // Create SWP gate and add to circuit
+                qgate *swap_gate = create_swap_gate();
+                int *qubits = malloc(2 * sizeof(int));
+                qubits[0] = qubit_1;
+                qubits[1] = qubit_2;
+                add_gate_to_list(gates, swap_gate, qubits);
+            } else {
+                // Generate a generic SWAP matrix and add it to the gate list
+                qgate *swap_gate = generate_generic_swap(abs(qubit_1-qubit_2)+1, qubit_1, qubit_2);
+                if (swap_gate != NULL) {
+                    int *qubits = malloc(2 * sizeof(int));
+                    qubits[0] = qubit_1;
+                    qubits[1] = qubit_2;
+                    add_gate_to_list(gates, swap_gate, qubits);
+                }
             }
-
-            // Create SWP gate and add to circuit
-            qgate *swap_gate = create_swap_gate();
-            int *qubits = malloc(2 * sizeof(int));
-            qubits[0] = qubit_1;
-            qubits[1] = qubit_2;
-
-            add_gate_to_list(gates, swap_gate, qubits);
-        } else if (strcmp(gate_type, "CNOT") == 0) {
+        }
+        else if (strcmp(gate_type, "CNOT") == 0) {
             // Parse two qubit indices for CNOT gate
             if (sscanf(op_ptr, "%d_%d", &qubit_1, &qubit_2) != 2) {
                 fprintf(stderr, "Error parsing CNOT qubits\n");
@@ -422,56 +488,186 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
     return result;
 }
 
-// Function to build the full operator matrix for the circuit layer
-cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
-    // Start with a 1x1 identity matrix
-    cnum **full_matrix = allocate_matrix(1);
-    full_matrix[0][0] = (cnum){1, 0};
-    int full_dim = 1; // Start with 1x1
 
-    for (int q = 0; q < num_qubits; q++) {
-        cnum **current_matrix = NULL;
-        int matrix_dim = 2; // Default to 2x2 for single-qubit gates
+void print_gate_matrix(cnum **matrix, int size) {
+    // printf("Gate matrix (%d x %d):\n", size, size);
+    // for (int i = 0; i < size; i++) {
+    //     for (int j = 0; j < size; j++) {
+    //         // printf("(%.2f + %.2fi) ", matrix[i][j].re, matrix[i][j].im);
+    //         // printf("%.2f ", matrix[i][j].re);
+    //         printf("%.0f ", matrix[i][j].re);
 
-        // printf("Processing qubit %d\n", q);
+    //     }
+    //     printf("\n");
+    // }
+}
 
-        // Check if there's a gate for this qubit or a two-qubit gate involving this and the next qubit
-        gate_node *node = gates->head;
-        while (node != NULL) {
-            if (node->gate->size == 1 && node->qubits[0] == q) {
-                current_matrix = node->gate->matrix;
-                matrix_dim = 2;
-                // printf("Single-qubit gate found on qubit %d\n", q);
-                break;
-            } else if (node->gate->size == 2 && node->qubits[0] == q && node->qubits[1] == q + 1) {
-                current_matrix = node->gate->matrix;
-                matrix_dim = 4;
-                // printf("Two-qubit gate found on qubits %d and %d\n", q, q + 1);
-                q++; // Skip the next qubit as it's part of this two-qubit gate
-                break;
+cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
+    int gate_size = gate->size;  // Number of qubits the gate operates on
+    int full_size = 1 << num_qubits;  // 2^num_qubits
+    cnum **expanded_matrix = NULL;
+
+    // Start with an identity matrix for the expansion
+    expanded_matrix = allocate_matrix(1);
+    expanded_matrix[0][0].re = 1.0; // Start with a 1x1 identity element
+
+    int target_index = 0;
+    int expanded_qubits = 0;  // Tracks the number of qubits incorporated into expanded_matrix
+
+    for (int i = 0; i < num_qubits; i++) {
+        cnum **current_matrix;
+        int current_matrix_size;
+
+        // Check if the current qubit is part of the target qubits for this gate
+        if (target_index < gate_size && i == target_qubits[target_index]) {
+            // Use the gate matrix for the targeted qubits
+            current_matrix = gate->matrix;
+            current_matrix_size = 1 << gate_size;
+
+            // Move to the next target qubit
+            target_index++;
+
+            // Skip the rest of the target qubits covered by this multi-qubit gate
+            i += (gate_size - 1);
+        } else {
+            // Use a 2x2 identity matrix for non-target qubits
+            current_matrix_size = 2;
+            current_matrix = allocate_matrix(current_matrix_size);
+            if (current_matrix == NULL) {
+                fprintf(stderr, "Failed to allocate identity matrix for expansion\n");
+                if (expanded_matrix != NULL) {
+                    free_matrix(expanded_matrix, 1 << expanded_qubits);
+                }
+                return NULL;
             }
-            node = node->next;
+
+            // Initialize as a 2x2 identity matrix
+            current_matrix[0][0].re = 1.0;
+            current_matrix[0][0].im = 0.0;
+            current_matrix[1][1].re = 1.0;
+            current_matrix[1][1].im = 0.0;
+            current_matrix[0][1].re = 0.0;
+            current_matrix[0][1].im = 0.0;
+            current_matrix[1][0].re = 0.0;
+            current_matrix[1][0].im = 0.0;
         }
 
-        // If no gate found, use an identity matrix for this qubit
-        if (current_matrix == NULL) {
-            // printf("No gate found on qubit %d, using identity\n", q);
-            current_matrix = create_identity_matrix();
-            matrix_dim = 2;
+        // Compute the tensor product with the current expanded matrix so far
+        int expanded_size = 1 << expanded_qubits;  // Size of the expanded matrix so far
+        cnum **temp_matrix = tensor_product(expanded_matrix, expanded_size, current_matrix, current_matrix_size);
+
+        // Free the old expanded matrix if it wasn't the gate itself
+        if (expanded_matrix != gate->matrix) {
+            free_matrix(expanded_matrix, expanded_size);
         }
 
-        // printf("Tensor product of dimensions %dx%d and %dx%d\n", full_dim, full_dim, matrix_dim, matrix_dim);
-        cnum **new_full_matrix = tensor_product(full_matrix, full_dim, current_matrix, matrix_dim);
+        // If the current matrix was an identity matrix, we need to free it
+        if (current_matrix != gate->matrix) {
+            free_matrix(current_matrix, current_matrix_size);
+        }
 
-        // Free the old full matrix and update with the new one
-        free_matrix(full_matrix, full_dim);
-        full_matrix = new_full_matrix;
-        full_dim *= matrix_dim; // Correctly update full_dim for new size
+        // Update the expanded matrix with the newly computed tensor product
+        expanded_matrix = temp_matrix;
+
+        // Update the number of qubits incorporated into expanded_matrix
+        expanded_qubits += (current_matrix_size == 1 << gate_size) ? gate_size : 1;
     }
 
-    // printf("Final full_matrix dimension: %dx%d\n", full_dim, full_dim); // Expected to be 16x16 for a 4-qubit system
+    return expanded_matrix;
+}
+
+
+
+cnum **multiply_matrices(cnum **A, cnum **B, int size) {
+    printf("Multiplying matrices of size %d x %d\n", size, size);
+    cnum **result = allocate_matrix(size);
+    if (result == NULL) {
+        fprintf(stderr, "Failed to allocate memory for result matrix\n");
+        return NULL;
+    }
+
+    // Initialize the result matrix with zero values
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            result[i][j].re = 0.0;
+            result[i][j].im = 0.0;
+        }
+    }
+
+    // Perform matrix multiplication
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            for (int k = 0; k < size; k++) {
+                // Multiply corresponding elements and accumulate
+                double re_part = A[i][k].re * B[k][j].re - A[i][k].im * B[k][j].im;
+                double im_part = A[i][k].re * B[k][j].im + A[i][k].im * B[k][j].re;
+
+                result[i][j].re += re_part;
+                result[i][j].im += im_part;
+            }
+        }
+    }
+
+    return result;
+}
+
+
+
+cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
+    printf("Building full operator matrix for %d qubits\n", num_qubits);
+    int full_size = 1 << num_qubits;  // 2^num_qubits
+    cnum **full_matrix = allocate_matrix(full_size);
+
+    if (full_matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for full operator matrix\n");
+        return NULL;
+    }
+
+    // Initialize full_matrix to be an identity matrix
+    for (int i = 0; i < full_size; i++) {
+        for (int j = 0; j < full_size; j++) {
+            full_matrix[i][j].re = (i == j) ? 1.0 : 0.0;
+            full_matrix[i][j].im = 0.0;
+        }
+    }
+
+    // Iterate over all gates in the gate list
+    for (gate_node *node = gates->head; node != NULL; node = node->next) {
+        printf("Expanding gate matrix for gate with %d qubits:\n", node->gate->size);
+        // print_gate_matrix(node->gate->matrix, 1 << node->gate->size);
+
+        // Expand the gate matrix to the full system size
+        cnum **expanded_matrix = expand_gate_matrix(node->gate, num_qubits, node->qubits);
+        if (expanded_matrix == NULL) {
+            fprintf(stderr, "Failed to expand gate matrix\n");
+            free_matrix(full_matrix, full_size);
+            return NULL;
+        }
+
+        printf("Expanded matrix\n");
+        print_gate_matrix(expanded_matrix, full_size);
+
+
+        // Multiply the current full matrix with the expanded gate matrix
+        cnum **temp_matrix = multiply_matrices(full_matrix, expanded_matrix, full_size);
+        if (temp_matrix == NULL) {
+            fprintf(stderr, "Failed to multiply matrices\n");
+            free_matrix(full_matrix, full_size);
+            free_matrix(expanded_matrix, full_size);
+            return NULL;
+        }
+
+        // Free the old matrices after multiplication
+        free_matrix(full_matrix, full_size);
+        free_matrix(expanded_matrix, full_size);
+
+        // Update the full matrix
+        full_matrix = temp_matrix;
+    }
+
     return full_matrix;
 }
+
 
 
 void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
@@ -516,6 +712,8 @@ void apply_gate(qreg *qr, gate_list *gates) {
     // Build the full operator matrix for this circuit layer
 
     cnum **operator_matrix = build_full_operator_matrix(gates, qr->size);
+    printf("Built following full matrix:\n");
+    print_gate_matrix(operator_matrix, 1<<(qr->size));
 
     // Apply the full operator matrix to the quantum register's state vector
     apply_operator_to_state(qr, operator_matrix);
@@ -530,7 +728,7 @@ void circuit_layer(qreg *qr, const char *operations) {
     init_gate_list(&gates);
 
     // Parse the operation string and populate the gate list
-    parse_circuit_layer(&gates, operations);
+    parse_circuit_layer(qr, &gates, operations);
 
     // Apply the gates to the quantum register
     apply_gate(qr, &gates);
