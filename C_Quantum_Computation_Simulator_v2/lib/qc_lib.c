@@ -189,7 +189,7 @@ qgate *create_reverse_cnot_gate() {
     gate->matrix = allocate_matrix(4);
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][3] = (cnum){1, 0};
-    gate->matrix[3][3] = (cnum){1, 0};
+    gate->matrix[2][2] = (cnum){1, 0};
     gate->matrix[3][1] = (cnum){1, 0};
     return gate;
 }
@@ -298,13 +298,12 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
             }
             printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
-            // Not needed anymore, as the generate_generic_swap is now correct and takes this into consideration
-            // // Normalize qubit order to ensure qubit_1 < qubit_2
-            // if (qubit_1 > qubit_2) {
-            //     int temp = qubit_1;
-            //     qubit_1 = qubit_2;
-            //     qubit_2 = temp;
-            // }
+            // Normalize qubit order to ensure qubit_1 < qubit_2
+            if (qubit_1 > qubit_2) {
+                int temp = qubit_1;
+                qubit_1 = qubit_2;
+                qubit_2 = temp;
+            }
 
             // Check if qubits are adjacent
             if (abs(qubit_1 - qubit_2) == 1) {
@@ -336,8 +335,6 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
 
             // Handle non-adjacent or reverse-ordered CNOTs
             if (abs(qubit_1 - qubit_2) != 1 || qubit_1 > qubit_2) {
-                printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
-
                 if (qubit_1 > qubit_2) {
                     if(qubit_1 == qubit_2+1) {
                         // Use the reverse CNOT matrix for non-ordered control and target
@@ -347,11 +344,12 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                             return;
                         }
                         int *qubits = malloc(2 * sizeof(int));
-                        qubits[0] = qubit_1;
-                        qubits[1] = qubit_2;
+                        qubits[1] = qubit_1;
+                        qubits[0] = qubit_2;
                         add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
                     }
                     else {
+                        printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
                         // Swap control and target to make them adjacent and correctly ordered
                         int swap_target = qubit_2;
                         int swap_to = qubit_1 - 1;
@@ -380,11 +378,12 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                             return;
                         }
                         qubits = malloc(2 * sizeof(int));
-                        qubits[0] = qubit_1;
-                        qubits[1] = swap_to;
+                        qubits[1] = qubit_1;
+                        qubits[0] = swap_to;
                         add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
                     }
                 } else {
+                    printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
                     // Move target qubit adjacent to control
                     int swap_target = qubit_2;
                     int swap_to = qubit_1 + 1;
@@ -518,11 +517,8 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
     }
 
     // Clean up
-    printf("Test1\n");
     clear_gate_list(&swap_gates);
-    printf("Test2\n");
     clear_gate_list(&current_gates);
-    printf("Test3\n");
 }
 
 qreg *new_qreg(int size) {
