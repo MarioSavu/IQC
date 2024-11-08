@@ -8,6 +8,8 @@
 // TODO: more input validation, e.g. check if qr exists (not NULL) in all functions
 // Enforce validation in test apps & main app also
 
+void apply_gate(qreg *qr, gate_list *gates);
+
 // Helper function to allocate a 2D matrix of complex numbers
 cnum **allocate_matrix(int size) {
     cnum **matrix = (cnum **)malloc(size * sizeof(cnum *));
@@ -180,6 +182,18 @@ qgate *create_cnot_gate() {
     return gate;
 }
 
+qgate *create_reverse_cnot_gate() {
+    qgate *gate = malloc(sizeof(qgate));
+    strncpy(gate->type, "RCNOT", sizeof(gate->type));
+    gate->size = 2;
+    gate->matrix = allocate_matrix(4);
+    gate->matrix[0][0] = (cnum){1, 0};
+    gate->matrix[1][3] = (cnum){1, 0};
+    gate->matrix[3][3] = (cnum){1, 0};
+    gate->matrix[3][1] = (cnum){1, 0};
+    return gate;
+}
+
 qgate *create_swap_gate() {
     qgate *gate = malloc(sizeof(qgate));
     strncpy(gate->type, "SWP", sizeof(gate->type));
@@ -254,11 +268,18 @@ qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
 }
 
 
-void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
+void parse_circuit_layer(qreg *qr, const char *operations) {
+    printf("Parsing circuit layer: %s\n", operations);
     const char *op_ptr = operations;
     char gate_type[16];
     int qubit_1, qubit_2;
     double angle;
+
+    gate_list swap_gates;
+    gate_list current_gates;
+
+    init_gate_list(&swap_gates);
+    init_gate_list(&current_gates);
 
     while (*op_ptr != '\0') {
         // Parse the gate type
@@ -277,12 +298,13 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
             }
             printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
-            // Normalize qubit order to ensure qubit_1 < qubit_2
-            if (qubit_1 > qubit_2) {
-                int temp = qubit_1;
-                qubit_1 = qubit_2;
-                qubit_2 = temp;
-            }
+            // Not needed anymore, as the generate_generic_swap is now correct and takes this into consideration
+            // // Normalize qubit order to ensure qubit_1 < qubit_2
+            // if (qubit_1 > qubit_2) {
+            //     int temp = qubit_1;
+            //     qubit_1 = qubit_2;
+            //     qubit_2 = temp;
+            // }
 
             // Check if qubits are adjacent
             if (abs(qubit_1 - qubit_2) == 1) {
@@ -292,7 +314,7 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
                 int *qubits = malloc(2 * sizeof(int));
                 qubits[0] = qubit_1;
                 qubits[1] = qubit_2;
-                add_gate_to_list(gates, swap_gate, qubits);
+                add_gate_to_list(&current_gates, swap_gate, qubits);
             } else {
                 // Generate a generic SWAP matrix and add it to the gate list
                 qgate *swap_gate = generate_generic_swap(abs(qubit_1-qubit_2)+1, qubit_1, qubit_2);
@@ -300,30 +322,112 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
                     int *qubits = malloc(2 * sizeof(int));
                     qubits[0] = qubit_1;
                     qubits[1] = qubit_2;
-                    add_gate_to_list(gates, swap_gate, qubits);
+                    add_gate_to_list(&current_gates, swap_gate, qubits);
                 }
             }
         }
         else if (strcmp(gate_type, "CNOT") == 0) {
             // Parse two qubit indices for CNOT gate
             if (sscanf(op_ptr, "%d_%d", &qubit_1, &qubit_2) != 2) {
-                fprintf(stderr, "Error parsing CNOT qubits\n");
+                fprintf(stderr, "Error parsing %s qubits\n", gate_type);
                 return;
             }
+            printf("Parsed CNOT gate for qubits %d and %d\n", qubit_1, qubit_2);
 
-            // Ensure qubits are adjacent and the first qubit is smaller
-            if (abs(qubit_1 - qubit_2) != 1 || qubit_1 >= qubit_2) {
-                fprintf(stderr, "CNOT gate only supports adjacent qubits with the first qubit smaller than the second\n");
-                return;
+            // Handle non-adjacent or reverse-ordered CNOTs
+            if (abs(qubit_1 - qubit_2) != 1 || qubit_1 > qubit_2) {
+                printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
+
+                if (qubit_1 > qubit_2) {
+                    if(qubit_1 == qubit_2+1) {
+                        // Use the reverse CNOT matrix for non-ordered control and target
+                        qgate *reverse_cnot_gate = create_reverse_cnot_gate();
+                        if (reverse_cnot_gate == NULL) {
+                            fprintf(stderr, "Failed to generate reverse CNOT gate\n");
+                            return;
+                        }
+                        int *qubits = malloc(2 * sizeof(int));
+                        qubits[0] = qubit_1;
+                        qubits[1] = qubit_2;
+                        add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
+                    }
+                    else {
+                        // Swap control and target to make them adjacent and correctly ordered
+                        int swap_target = qubit_2;
+                        int swap_to = qubit_1 - 1;
+                        qgate *swap_gate;
+
+                        // Check if qubits are adjacent
+                        if (abs(swap_target - swap_to) == 1) {
+                            swap_gate = create_swap_gate();
+                        } else {
+                            // Generate a generic SWAP matrix and add it to the gate list
+                            swap_gate = generate_generic_swap(abs(swap_target-swap_to)+1, swap_target, swap_to);
+                        }
+                        if (swap_gate == NULL) {
+                            fprintf(stderr, "Failed to generate swap gate\n");
+                            return;
+                        }
+                        int *qubits = malloc(2 * sizeof(int));
+                        qubits[0] = swap_target;
+                        qubits[1] = swap_to;
+                        add_gate_to_list(&swap_gates, swap_gate, qubits);
+
+                        // Use the reverse CNOT matrix for non-ordered control and target
+                        qgate *reverse_cnot_gate = create_reverse_cnot_gate();
+                        if (reverse_cnot_gate == NULL) {
+                            fprintf(stderr, "Failed to generate reverse CNOT gate\n");
+                            return;
+                        }
+                        qubits = malloc(2 * sizeof(int));
+                        qubits[0] = qubit_1;
+                        qubits[1] = swap_to;
+                        add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
+                    }
+                } else {
+                    // Move target qubit adjacent to control
+                    int swap_target = qubit_2;
+                    int swap_to = qubit_1 + 1;
+                    qgate *swap_gate;
+                    // Check if qubits are adjacent
+                    if (abs(swap_target - swap_to) == 1) {
+                        swap_gate = create_swap_gate();
+                    } else {
+                        // Generate a generic SWAP matrix and add it to the gate list
+                        swap_gate = generate_generic_swap(abs(swap_target-swap_to)+1, swap_target, swap_to);
+                    }
+                    if (swap_gate == NULL) {
+                        fprintf(stderr, "Failed to generate swap gate\n");
+                        return;
+                    }
+                    int *qubits = malloc(2 * sizeof(int));
+                    qubits[0] = swap_target;
+                    qubits[1] = swap_to;
+                    add_gate_to_list(&swap_gates, swap_gate, qubits);
+
+                    // Generate standard CNOT gate
+                    qgate *cnot_gate = create_cnot_gate();
+                    if (cnot_gate == NULL) {
+                        fprintf(stderr, "Failed to generate CNOT gate\n");
+                        return;
+                    }
+                    qubits = malloc(2 * sizeof(int));
+                    qubits[0] = qubit_1;
+                    qubits[1] = swap_to;
+                    add_gate_to_list(&current_gates, cnot_gate, qubits);
+                }
+            } else {
+                // Add standard CNOT gate to current gates if adjacent and in correct order
+                qgate *cnot_gate = create_cnot_gate();
+                if (cnot_gate == NULL) {
+                    fprintf(stderr, "Failed to generate CNOT gate\n");
+                    return;
+                }
+                int *qubits = malloc(2 * sizeof(int));
+                qubits[0] = qubit_1;
+                qubits[1] = qubit_2;
+                add_gate_to_list(&current_gates, cnot_gate, qubits);
             }
-
-            // Create CNOT gate and add to circuit
-            qgate *cnot_gate = create_cnot_gate();
-            int *qubits = malloc(2 * sizeof(int));
-            qubits[0] = qubit_1;
-            qubits[1] = qubit_2;
-
-            add_gate_to_list(gates, cnot_gate, qubits);
         } else if (strcmp(gate_type, "X") == 0 || strcmp(gate_type, "Y") == 0 || strcmp(gate_type, "Z") == 0 ||
                    strcmp(gate_type, "H") == 0 || strcmp(gate_type, "S") == 0 || strcmp(gate_type, "T") == 0) {
             // Parse single qubit index for 1-qubit gates
@@ -357,7 +461,7 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
             int *qubits = malloc(sizeof(int));
             qubits[0] = qubit_1;
 
-            add_gate_to_list(gates, gate, qubits);
+            add_gate_to_list(&current_gates, gate, qubits);
         } else if (strcmp(gate_type, "RX") == 0 || strcmp(gate_type, "RY") == 0 || strcmp(gate_type, "RZ") == 0 || strcmp(gate_type, "P") == 0) {
             // Parse single qubit index and angle for rotation or phase gates
             if (sscanf(op_ptr, "%d_%lf", &qubit_1, &angle) != 2) {
@@ -386,7 +490,7 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
             int *qubits = malloc(sizeof(int));
             qubits[0] = qubit_1;
 
-            add_gate_to_list(gates, gate, qubits);
+            add_gate_to_list(&current_gates, gate, qubits);
         } else {
             fprintf(stderr, "Unsupported gate type: %s\n", gate_type);
             return;
@@ -396,8 +500,30 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
         while (*op_ptr != '\0' && *op_ptr != '|') op_ptr++;
         if (*op_ptr == '|') op_ptr++;
     }
-}
 
+    // Apply the gates: apply the SWAP gates if they exist, then the current gates, then the SWAP gates again
+    if (swap_gates.head != NULL) {
+        printf("Applying swap gates before main gates:\n");
+        apply_gate(qr, &swap_gates);
+    }
+
+    if (current_gates.head != NULL) {
+        printf("Applying main gates:\n");
+        apply_gate(qr, &current_gates);
+    }
+
+    if (swap_gates.head != NULL) {
+        printf("Re-applying swap gates after main gates:\n");
+        apply_gate(qr, &swap_gates);
+    }
+
+    // Clean up
+    printf("Test1\n");
+    clear_gate_list(&swap_gates);
+    printf("Test2\n");
+    clear_gate_list(&current_gates);
+    printf("Test3\n");
+}
 
 qreg *new_qreg(int size) {
     if (size > QUBIT_REGISTER_LIMIT) {
@@ -501,7 +627,7 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
 
 
 void print_gate_matrix(cnum **matrix, int size) {
-#if 0
+#if 1
     printf("Gate matrix (%d x %d):\n", size, size);
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
@@ -726,21 +852,15 @@ void apply_gate(qreg *qr, gate_list *gates) {
     // Apply the full operator matrix to the quantum register's state vector
     apply_operator_to_state(qr, operator_matrix);
 
+    printf("State vector afterwards:\n");
+    view_state_vector(qr);printf("\n");
+
     // Free the full operator matrix after application
     free_matrix(operator_matrix, 1 << qr->size);
 }
 
 
 void circuit_layer(qreg *qr, const char *operations) {
-    gate_list gates;
-    init_gate_list(&gates);
-
     // Parse the operation string and populate the gate list
-    parse_circuit_layer(qr, &gates, operations);
-
-    // Apply the gates to the quantum register
-    apply_gate(qr, &gates);
-
-    // Clear the gate list to free memory
-    clear_gate_list(&gates);
+    parse_circuit_layer(qr, operations);
 }
