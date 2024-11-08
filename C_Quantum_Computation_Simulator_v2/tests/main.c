@@ -7,7 +7,7 @@
 
 int main() {
 
-    qreg *qr = new_qreg(4);
+    qreg *qr = new_qreg(5);
     if (qr == NULL) {
         printf("Error creating new quantum register\n");
         return 1;
@@ -30,9 +30,9 @@ int main() {
     // view_state_vector(qr);printf("\n");
 
     view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "X_1");
+    circuit_layer(qr, "X_1|X_2|X_4");
     view_state_vector(qr);printf("\n");
-    circuit_layer(qr, "SWP_1_3");
+    circuit_layer(qr, "SWP_1_3|SWP_4_0");
     view_state_vector(qr);printf("\n");
     // circuit_layer(qr, "SWP_0_2");
     // view_state_vector(qr);printf("\n");

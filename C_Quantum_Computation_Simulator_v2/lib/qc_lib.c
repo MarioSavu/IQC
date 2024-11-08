@@ -214,7 +214,7 @@ qgate *create_custom_gate(cnum **matrix, int num_qubits) {
 
 qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
     printf("Generating generic SWAP gate for qubits %d and %d across %d qubits\n", qubit_1, qubit_2, num_qubits);
-    
+
     int size = 1 << num_qubits;  // 2^num_qubits
     cnum **swap_matrix = allocate_matrix(size);
     if (swap_matrix == NULL) {
@@ -228,11 +228,16 @@ qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
         swap_matrix[i][i].im = 0.0;
     }
 
+    // Adjust indices so that we can effectively work as if qubit_1 is at position 0
+    int min_qubit = (qubit_1 < qubit_2) ? qubit_1 : qubit_2;
+    int adjusted_qubit_1 = qubit_1 - min_qubit;
+    int adjusted_qubit_2 = qubit_2 - min_qubit;
+
     // Apply swaps to construct the composite matrix
     for (int i = 0; i < size; i++) {
         int swapped_idx = i;
-        if (((i >> qubit_1) & 1) != ((i >> qubit_2) & 1)) {
-            swapped_idx ^= (1 << qubit_1) | (1 << qubit_2);
+        if (((i >> adjusted_qubit_1) & 1) != ((i >> adjusted_qubit_2) & 1)) {
+            swapped_idx ^= (1 << adjusted_qubit_1) | (1 << adjusted_qubit_2);
         }
         swap_matrix[i][swapped_idx].re = 1.0;
         swap_matrix[i][i].re = 0.0; // Clear original entry if swapped
@@ -272,6 +277,12 @@ void parse_circuit_layer(qreg *qr, gate_list *gates, const char *operations) {
             }
             printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
+            // Normalize qubit order to ensure qubit_1 < qubit_2
+            if (qubit_1 > qubit_2) {
+                int temp = qubit_1;
+                qubit_1 = qubit_2;
+                qubit_2 = temp;
+            }
 
             // Check if qubits are adjacent
             if (abs(qubit_1 - qubit_2) == 1) {
@@ -490,17 +501,20 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
 
 
 void print_gate_matrix(cnum **matrix, int size) {
-    // printf("Gate matrix (%d x %d):\n", size, size);
-    // for (int i = 0; i < size; i++) {
-    //     for (int j = 0; j < size; j++) {
-    //         // printf("(%.2f + %.2fi) ", matrix[i][j].re, matrix[i][j].im);
-    //         // printf("%.2f ", matrix[i][j].re);
-    //         printf("%.0f ", matrix[i][j].re);
+#if 0
+    printf("Gate matrix (%d x %d):\n", size, size);
+    for (int i = 0; i < size; i++) {
+        for (int j = 0; j < size; j++) {
+            // printf("(%.2f + %.2fi) ", matrix[i][j].re, matrix[i][j].im);
+            // printf("%.2f ", matrix[i][j].re);
+            printf("%.0f ", matrix[i][j].re);
 
-    //     }
-    //     printf("\n");
-    // }
+        }
+        printf("\n");
+    }
+#endif
 }
+
 
 cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
     int gate_size = gate->size;  // Number of qubits the gate operates on
@@ -543,13 +557,7 @@ cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
 
             // Initialize as a 2x2 identity matrix
             current_matrix[0][0].re = 1.0;
-            current_matrix[0][0].im = 0.0;
             current_matrix[1][1].re = 1.0;
-            current_matrix[1][1].im = 0.0;
-            current_matrix[0][1].re = 0.0;
-            current_matrix[0][1].im = 0.0;
-            current_matrix[1][0].re = 0.0;
-            current_matrix[1][0].im = 0.0;
         }
 
         // Compute the tensor product with the current expanded matrix so far
@@ -634,7 +642,7 @@ cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
     // Iterate over all gates in the gate list
     for (gate_node *node = gates->head; node != NULL; node = node->next) {
         printf("Expanding gate matrix for gate with %d qubits:\n", node->gate->size);
-        // print_gate_matrix(node->gate->matrix, 1 << node->gate->size);
+        print_gate_matrix(node->gate->matrix, 1 << node->gate->size);
 
         // Expand the gate matrix to the full system size
         cnum **expanded_matrix = expand_gate_matrix(node->gate, num_qubits, node->qubits);
