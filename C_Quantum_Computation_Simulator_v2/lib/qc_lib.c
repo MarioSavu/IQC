@@ -5,6 +5,16 @@
 #include <stdint.h>
 #include <string.h>
 
+// #define DEBUG_PRINTS
+
+#ifdef DEBUG_PRINTS 
+#define debug_printf(...) printf(__VA_ARGS__)
+#else
+#define debug_printf(...) ((void)0)
+#endif
+
+#define PRINT_LSB_LEFT
+
 // TODO: more input validation, e.g. check if qr exists (not NULL) in all functions
 // Enforce validation in test apps & main app also
 
@@ -207,7 +217,7 @@ qgate *create_swap_gate() {
 }
 
 qgate *create_custom_gate(cnum **matrix, int num_qubits) {
-    printf("Creating custom gate for %d qubits\n", num_qubits);
+    debug_printf("Creating custom gate for %d qubits\n", num_qubits);
     
     // Allocate memory for the gate
     qgate *gate = (qgate *)malloc(sizeof(qgate));
@@ -227,7 +237,7 @@ qgate *create_custom_gate(cnum **matrix, int num_qubits) {
 
 
 qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
-    printf("Generating generic SWAP gate for qubits %d and %d across %d qubits\n", qubit_1, qubit_2, num_qubits);
+    debug_printf("Generating generic SWAP gate for qubits %d and %d across %d qubits\n", qubit_1, qubit_2, num_qubits);
 
     int size = 1 << num_qubits;  // 2^num_qubits
     cnum **swap_matrix = allocate_matrix(size);
@@ -246,15 +256,16 @@ qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
     int min_qubit = (qubit_1 < qubit_2) ? qubit_1 : qubit_2;
     int adjusted_qubit_1 = qubit_1 - min_qubit;
     int adjusted_qubit_2 = qubit_2 - min_qubit;
+    debug_printf("Translates to a swap in-between %d and %d\n", adjusted_qubit_1, adjusted_qubit_2);
 
     // Apply swaps to construct the composite matrix
     for (int i = 0; i < size; i++) {
         int swapped_idx = i;
         if (((i >> adjusted_qubit_1) & 1) != ((i >> adjusted_qubit_2) & 1)) {
             swapped_idx ^= (1 << adjusted_qubit_1) | (1 << adjusted_qubit_2);
+            swap_matrix[i][swapped_idx].re = 1.0;
+            swap_matrix[i][i].re = 0.0; // Clear original entry if swapped
         }
-        swap_matrix[i][swapped_idx].re = 1.0;
-        swap_matrix[i][i].re = 0.0; // Clear original entry if swapped
     }
 
     qgate *swap_gate = create_custom_gate(swap_matrix, num_qubits);
@@ -269,7 +280,7 @@ qgate *generate_generic_swap(int num_qubits, int qubit_1, int qubit_2) {
 
 
 void parse_circuit_layer(qreg *qr, const char *operations) {
-    printf("Parsing circuit layer: %s\n", operations);
+    debug_printf("Parsing circuit layer: %s\n", operations);
     const char *op_ptr = operations;
     char gate_type[16];
     int qubit_1, qubit_2;
@@ -296,7 +307,7 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing SWP qubits\n");
                 return;
             }
-            printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
+            debug_printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
             // Normalize qubit order to ensure qubit_1 < qubit_2
             if (qubit_1 > qubit_2) {
@@ -331,7 +342,7 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing %s qubits\n", gate_type);
                 return;
             }
-            printf("Parsed CNOT gate for qubits %d and %d\n", qubit_1, qubit_2);
+            debug_printf("Parsed CNOT gate for qubits %d and %d\n", qubit_1, qubit_2);
 
             // Handle non-adjacent or reverse-ordered CNOTs
             if (abs(qubit_1 - qubit_2) != 1 || qubit_1 > qubit_2) {
@@ -349,11 +360,11 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                         add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
                     }
                     else {
-                        printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
                         // Swap control and target to make them adjacent and correctly ordered
                         int swap_target = qubit_2;
                         int swap_to = qubit_1 - 1;
                         qgate *swap_gate;
+                        debug_printf("Qubits %d and %d require swapping\n", swap_target, swap_to);
 
                         // Check if qubits are adjacent
                         if (abs(swap_target - swap_to) == 1) {
@@ -383,11 +394,13 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                         add_gate_to_list(&current_gates, reverse_cnot_gate, qubits);
                     }
                 } else {
-                    printf("Qubits %d and %d require swapping\n", qubit_1, qubit_2);
                     // Move target qubit adjacent to control
                     int swap_target = qubit_2;
                     int swap_to = qubit_1 + 1;
                     qgate *swap_gate;
+
+                    debug_printf("Qubits %d and %d require swapping\n", swap_target, swap_to);
+
                     // Check if qubits are adjacent
                     if (abs(swap_target - swap_to) == 1) {
                         swap_gate = create_swap_gate();
@@ -400,8 +413,8 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                         return;
                     }
                     int *qubits = malloc(2 * sizeof(int));
-                    qubits[0] = swap_target;
-                    qubits[1] = swap_to;
+                    qubits[1] = swap_target;
+                    qubits[0] = swap_to;
                     add_gate_to_list(&swap_gates, swap_gate, qubits);
 
                     // Generate standard CNOT gate
@@ -502,17 +515,17 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
 
     // Apply the gates: apply the SWAP gates if they exist, then the current gates, then the SWAP gates again
     if (swap_gates.head != NULL) {
-        printf("Applying swap gates before main gates:\n");
+        debug_printf("Applying swap gates before main gates:\n");
         apply_gate(qr, &swap_gates);
     }
 
     if (current_gates.head != NULL) {
-        printf("Applying main gates:\n");
+        debug_printf("Applying main gates:\n");
         apply_gate(qr, &current_gates);
     }
 
     if (swap_gates.head != NULL) {
-        printf("Re-applying swap gates after main gates:\n");
+        debug_printf("Re-applying swap gates after main gates:\n");
         apply_gate(qr, &swap_gates);
     }
 
@@ -570,7 +583,11 @@ void free_qreg(qreg *qr) {
 
 // Helper function to print binary representation of a basis state
 static void print_binary(int num, int bits) {
+#ifdef PRINT_LSB_LEFT
     for (int i = bits - 1; i >= 0; i--) {
+#else
+    for (int i = 0; i <= bits - 1; i++) {
+#endif
         printf("%d", (num >> i) & 1);
     }
 }
@@ -600,7 +617,7 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
     int dim_out = dimA * dimB;
     cnum **result = allocate_matrix(dim_out); // Allocate a dim_out x dim_out matrix
 
-    // printf("Computing tensor product: %dx%d ⊗ %dx%d = %dx%d\n", dimA, dimA, dimB, dimB, dim_out, dim_out);
+    debug_printf("Computing tensor product: %dx%d ⊗ %dx%d = %dx%d\n", dimA, dimA, dimB, dimB, dim_out, dim_out);
 
     for (int i = 0; i < dimA; i++) {
         for (int j = 0; j < dimA; j++) {
@@ -623,7 +640,7 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
 
 
 void print_gate_matrix(cnum **matrix, int size) {
-#if 1
+#ifdef DEBUG_PRINTS
     printf("Gate matrix (%d x %d):\n", size, size);
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
@@ -640,7 +657,6 @@ void print_gate_matrix(cnum **matrix, int size) {
 
 cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
     int gate_size = gate->size;  // Number of qubits the gate operates on
-    int full_size = 1 << num_qubits;  // 2^num_qubits
     cnum **expanded_matrix = NULL;
 
     // Start with an identity matrix for the expansion
@@ -709,7 +725,7 @@ cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
 
 
 cnum **multiply_matrices(cnum **A, cnum **B, int size) {
-    printf("Multiplying matrices of size %d x %d\n", size, size);
+    debug_printf("Multiplying matrices of size %d x %d\n", size, size);
     cnum **result = allocate_matrix(size);
     if (result == NULL) {
         fprintf(stderr, "Failed to allocate memory for result matrix\n");
@@ -744,7 +760,7 @@ cnum **multiply_matrices(cnum **A, cnum **B, int size) {
 
 
 cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
-    printf("Building full operator matrix for %d qubits\n", num_qubits);
+    debug_printf("Building full operator matrix for %d qubits\n", num_qubits);
     int full_size = 1 << num_qubits;  // 2^num_qubits
     cnum **full_matrix = allocate_matrix(full_size);
 
@@ -763,7 +779,7 @@ cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
 
     // Iterate over all gates in the gate list
     for (gate_node *node = gates->head; node != NULL; node = node->next) {
-        printf("Expanding gate matrix for gate with %d qubits:\n", node->gate->size);
+        debug_printf("Expanding gate matrix for gate with %d qubits:\n", node->gate->size);
         print_gate_matrix(node->gate->matrix, 1 << node->gate->size);
 
         // Expand the gate matrix to the full system size
@@ -774,7 +790,7 @@ cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
             return NULL;
         }
 
-        printf("Expanded matrix\n");
+        debug_printf("Expanded matrix\n");
         print_gate_matrix(expanded_matrix, full_size);
 
 
@@ -804,10 +820,10 @@ void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
     int num_states = 1 << qr->size; // 2^N for N qubits
     cnum *new_state = (cnum *)calloc(num_states, sizeof(cnum)); // Zero-initialize new state vector
 
-    // printf("Applying operator to state vector (size: %d)\n", num_states);
-    // printf("Address of operator_matrix: %p\n", (void *)operator_matrix);
-    // printf("Address of qr->amp: %p\n", (void *)qr->amp);
-    // printf("Address of new_state: %p\n", (void *)new_state);
+    debug_printf("Applying operator to state vector (size: %d)\n", num_states);
+    debug_printf("Address of operator_matrix: %p\n", (void *)operator_matrix);
+    debug_printf("Address of qr->amp: %p\n", (void *)qr->amp);
+    debug_printf("Address of new_state: %p\n", (void *)new_state);
 
     // Perform matrix-vector multiplication to apply the operator
     for (int i = 0; i < num_states; i++) {
@@ -833,7 +849,7 @@ void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
     free(qr->amp);
     qr->amp = new_state;
 
-    // printf("Operator application complete\n");
+    debug_printf("Operator application complete\n");
 }
 
 
@@ -842,14 +858,16 @@ void apply_gate(qreg *qr, gate_list *gates) {
     // Build the full operator matrix for this circuit layer
 
     cnum **operator_matrix = build_full_operator_matrix(gates, qr->size);
-    printf("Built following full matrix:\n");
+    debug_printf("Built following full matrix:\n");
     print_gate_matrix(operator_matrix, 1<<(qr->size));
 
     // Apply the full operator matrix to the quantum register's state vector
     apply_operator_to_state(qr, operator_matrix);
 
-    printf("State vector afterwards:\n");
+    debug_printf("State vector afterwards:\n");
+#ifdef DEBUG_PRINTS
     view_state_vector(qr);printf("\n");
+#endif
 
     // Free the full operator matrix after application
     free_matrix(operator_matrix, 1 << qr->size);
