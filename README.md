@@ -36,7 +36,13 @@ make clean        <- cleans everythings
 make run          <- runs the already built project (or builds & runs?)
 
 TODO:
-- Rewrite the code to be dynamic & support the API mentioned above for "step" simulation
+- Document how to build & run things, and how to use the API
+- Add more test cases, and a way to automatically run and test things on new builds (configurable)
+- Prepare some "How-To" examples and showcase in the readme
+- Do proper input validation (non repeating values in multi qubit gates, numbers that fit within the circuit, etc)
 - Add simple examples & organize the project into proper folders
 - Add examples for some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor)
 - Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing (hopefully) full API functionality in a simple language for people that don't like C
+
+Current version, v3, supports all the gates mentioned above (TODO: test the rotation & phase gates), plus SWP_Qn_Qm.
+It should be stable and should be used.
