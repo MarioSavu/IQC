@@ -212,8 +212,6 @@ int main() {
     test_parallel_gates();
     test_rotation_gates();
 
-    // TODO: Y, Z, T, S, RX, RY, RZ, P gate tests, with their own assertion function
-
     printf("All tests passed successfully.\n");
     return 0;
 }
