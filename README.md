@@ -1,7 +1,7 @@
 This is a project for our Introduction to Quantum Computing project, where we have to implement either:
 - a quantum simulation library (in a language of our choice)
 - or define our own quantum circuit language (i.e. syntax) along with an interpreter that can convert it and simulate the language
-
+---
 In this repository I am writing from (almost) scratch a quantum simulation library, in C, with a fixed API and support for at least some standard quantum gates, such as:
 - Hadamard gate H: e.g. "H_0"
 - Pauli-X, Pauli-Y and Pauli-Z gates X,Y,Z: e.g. "X_1","Y_2","Z_3"
@@ -11,7 +11,7 @@ In this repository I am writing from (almost) scratch a quantum simulation libra
 - Rotation around x,y,z gates Rx, Ry, Rz: e.g. "RX_11_1.8" where 11 is the qubit, and 1.8 is the rotation value measured in radians, and further divided by two, same for RY and RZ
 - Phase gate Ph: e.g. "P_12_4.2" where 12 is the qubit, and 4.2 is angle value for the desired phase change
 - T and S gates (rotation around z-axis by Pi/4 and Pi/2 radians): e.g. "T_12","S_13"
-
+---
 The quantum simulation library has APIs for:
 - Initializing an quantum register formed of N qubits (2^N complex numbers forming a state vector):
   - example: qreg *qr = new_qreg(8); (& free_qreg(qr); for when we're done with this register)
@@ -27,9 +27,11 @@ The API could provide multiple ways of visualizing the states, right now it just
 (0.71+0.00i)*|11>
 The output values can be viewed with the least significant qubit being either positioned on the right or left, and this is controllable through a define in qc_lib.h called PRINT_LSB_LEFT that can be added to the project.
 
+---
 To build & execute this project use the (TODO) Makefile's following commands:
-----
 
+
+----
 TODO:
 - Update the build system as needed, based on the evolving folder structures (Maybe a root make file and individual Makefiles in each project/example/test?)
 - Finish the TODO's in qc_lib.c
@@ -38,5 +40,6 @@ TODO:
 - Prepare some "How-To" examples and showcase in the readme, maybe some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor), and organize things in proper folders (lib, regression_tests, HowTo for basic API, demos & maybe a playground/scratchpad folder/file somewhere)
 - Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing full API functionality in a simple language for people that don't like C
 
+---
 Current version, v3, supports all the gates mentioned above (TODO: test the rotation, s, t & phase gates).
 It should be stable and can be used.
