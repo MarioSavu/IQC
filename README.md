@@ -31,13 +31,12 @@ To build & execute this project use the (TODO) Makefile's following commands:
 ----
 
 TODO:
+- Update the build system as needed, based on the evolving folder structures (Maybe a root make file and individual Makefiles in each project/example/test?)
+- Finish the TODO's in qc_lib.c
 - Document how to build & run things, and how to use the API
-- Add more test cases, and a way to automatically run and test things on new builds (configurable)
-- Prepare some "How-To" examples and showcase in the readme
-- Do proper input validation (non repeating values in multi qubit gates, numbers that fit within the circuit, etc)
-- Add simple examples & organize the project into proper folders
-- Add examples for some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor)
-- Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing (hopefully) full API functionality in a simple language for people that don't like C
+- Add more test cases (with proper asserts), and a way to automatically run and test things on new builds (a script in the parent folder of the tests that builds, runs & evaluates all the results?)
+- Prepare some "How-To" examples and showcase in the readme, maybe some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor), and organize things in proper folders (lib, regression_tests, HowTo for basic API, demos & maybe a playground/scratchpad folder/file somewhere)
+- Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing full API functionality in a simple language for people that don't like C
 
-Current version, v3, supports all the gates mentioned above (TODO: test the rotation, s, t & phase gates), plus SWP_Qn_Qm.
+Current version, v3, supports all the gates mentioned above (TODO: test the rotation, s, t & phase gates).
 It should be stable and can be used.

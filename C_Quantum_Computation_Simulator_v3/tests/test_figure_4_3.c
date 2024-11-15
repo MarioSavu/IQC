@@ -16,7 +16,6 @@ void test_figure_4_3() {
 
     view_state_vector(qr);
     // Add assertions to verify the state vector, if applicable
-    printf("Test 1 Passed: Applied SWP gate to qubits 0 and 1.\n");
 
     free_qreg(qr);
 }

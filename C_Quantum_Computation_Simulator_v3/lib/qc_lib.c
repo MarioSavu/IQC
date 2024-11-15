@@ -13,26 +13,53 @@
 #define debug_printf(...) ((void)0)
 #endif
 
-// TODO: more input validation, e.g. check if qr exists (not NULL) in all functions
-// Enforce validation in test apps & main app also
+// TODO: add validation for all dynamic allocations & verify that all structure pointers are no null before accessing elements
+
+typedef struct quantum_gate {
+    char type[10];    // Type of the gate (e.g., "X", "H", "CNOT", "SWP")
+    int size;         // Number of qubits it’s applied to (1 or 2)
+    cnum **matrix;    // Matrix operator for the particular gate
+} qgate;
+
+typedef struct gate_node {
+    qgate *gate;
+    int *qubits; // List of qubits this gate acts on
+    struct gate_node *next;
+} gate_node;
+
+typedef struct gate_list {
+    gate_node *head;
+} gate_list;
 
 void apply_gate(qreg *qr, gate_list *gates);
 
 // Helper function to allocate a 2D matrix of complex numbers
 cnum **allocate_matrix(int size) {
-    cnum **matrix = (cnum **)malloc(size * sizeof(cnum *));
-    for (int i = 0; i < size; i++) {
-        matrix[i] = (cnum *)calloc(size, sizeof(cnum)); // Zero-initialize each element
+    // TODO: verify that malloc & calloc succeeded 
+    if(size) {
+        cnum **matrix = (cnum **)malloc(size * sizeof(cnum *));
+        for (int i = 0; i < size; i++) {
+            matrix[i] = (cnum *)calloc(size, sizeof(cnum)); // Zero-initialize each element
+        }
+        return matrix;
     }
-    return matrix;
+    else {
+        fprintf(stderr, "Error trying to allocate a zero sized matrix\n");
+        return NULL;
+    }
 }
 
 // Free a matrix of complex numbers
 void free_matrix(cnum **matrix, int dim) {
-    for (int i = 0; i < dim; i++) {
-        free(matrix[i]);
+    if(dim != 0) {
+        for (int i = 0; i < dim; i++) {
+            free(matrix[i]);
+        }
+        free(matrix);
     }
-    free(matrix);
+    else {
+        fprintf(stderr, "Error trying to free a matrix with an incorrect size size %d\n", dim);
+    }
 }
 
 // Function to initialize the gate list
@@ -65,47 +92,47 @@ void clear_gate_list(gate_list *gates) {
 
 // Function to create a 2x2 identity matrix
 cnum **create_identity_matrix() {
-    cnum **matrix = allocate_matrix(2);
+    cnum **matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     matrix[0][0] = (cnum){1, 0}; // 1 + 0i
     matrix[1][1] = (cnum){1, 0}; // 1 + 0i
     return matrix;
 }
 
 qgate *create_x_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate));  // TODO: validate that it's not NULL
     strncpy(gate->type, "X", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][1] = (cnum){1, 0};
     gate->matrix[1][0] = (cnum){1, 0};
     return gate;
 }
 
 qgate *create_y_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "Y", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][1] = (cnum){0, -1};
     gate->matrix[1][0] = (cnum){0, 1};
     return gate;
 }
 
 qgate *create_z_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "Z", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){-1, 0};
     return gate;
 }
 
 qgate *create_h_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "H", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     double inv_sqrt_2 = 1.0 / sqrt(2.0);
     gate->matrix[0][0] = (cnum){inv_sqrt_2, 0};
     gate->matrix[0][1] = (cnum){inv_sqrt_2, 0};
@@ -115,20 +142,20 @@ qgate *create_h_gate() {
 }
 
 qgate *create_s_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "S", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){0, 1};
     return gate;
 }
 
 qgate *create_t_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "T", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*M_PI/4)
     gate->matrix[1][1] = (cnum){cos(M_PI / 4), sin(M_PI / 4)};  
@@ -136,10 +163,10 @@ qgate *create_t_gate() {
 }
 
 qgate *create_rx_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "RX", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
     gate->matrix[0][1] = (cnum){0, -sin(angle / 2)};
     gate->matrix[1][0] = (cnum){0, -sin(angle / 2)};
@@ -148,10 +175,10 @@ qgate *create_rx_gate(double angle) {
 }
 
 qgate *create_ry_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "RY", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
     gate->matrix[0][1] = (cnum){-sin(angle / 2), 0};
     gate->matrix[1][0] = (cnum){sin(angle / 2), 0};
@@ -160,10 +187,10 @@ qgate *create_ry_gate(double angle) {
 }
 
 qgate *create_rz_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "RZ", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*angle/2) & e^(-i*angle/2)
     gate->matrix[0][0] = (cnum){cos(angle / 2), -sin(angle / 2)};
     gate->matrix[1][1] = (cnum){cos(angle / 2), sin(angle / 2)};
@@ -171,20 +198,20 @@ qgate *create_rz_gate(double angle) {
 }
 
 qgate *create_phase_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "P", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2);
+    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){cos(angle), sin(angle)};
     return gate;
 }
 
 qgate *create_cnot_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "CNOT", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4);
+    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){1, 0};
     gate->matrix[2][3] = (cnum){1, 0};
@@ -193,10 +220,10 @@ qgate *create_cnot_gate() {
 }
 
 qgate *create_reverse_cnot_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "RCNOT", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4);
+    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][3] = (cnum){1, 0};
     gate->matrix[2][2] = (cnum){1, 0};
@@ -205,10 +232,10 @@ qgate *create_reverse_cnot_gate() {
 }
 
 qgate *create_swap_gate() {
-    qgate *gate = malloc(sizeof(qgate));
+    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
     strncpy(gate->type, "SWP", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4);
+    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][2] = (cnum){1, 0};
     gate->matrix[2][1] = (cnum){1, 0};
@@ -357,6 +384,18 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing %s qubits\n", gate_type);
                 return;
             }
+            if(qubit_1 > qr->size || qubit_2 > qr->size || qubit_3 > qr->size) {
+                fprintf(stderr, "Error: specified qubit in gate %s is greater than the circuit size: %d %d %d\n", gate_type, qubit_1, qubit_2, qubit_3);
+                return;
+            }
+            if(qubit_1 < 0 || qubit_2 < 0 || qubit_3 < 0) {
+                fprintf(stderr, "Error: specified qubit in gate %s less than zero: %d %d %d\n", gate_type, qubit_1, qubit_2, qubit_3);
+                return;
+            }
+            if(qubit_1 == qubit_2 || qubit_1 == qubit_3 || qubit_2 == qubit_3) {
+                fprintf(stderr, "Error: specified qubits in gate %s are equal: %d %d %d\n", gate_type, qubit_1, qubit_2, qubit_3);
+                return;
+            }
             debug_printf("Parsed CCNOT gate for control qubits %d, %d and target qubit %d\n", qubit_1, qubit_2, qubit_3);
 
             // Generate dynamic CCNOT gate
@@ -382,6 +421,19 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing SWP qubits\n");
                 return;
             }
+            if(qubit_1 > qr->size || qubit_2 > qr->size) {
+                fprintf(stderr, "Error: specified qubit in gate %s is greater than the circuit size: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+            if(qubit_1 < 0 || qubit_2 < 0) {
+                fprintf(stderr, "Error: specified qubit in gate %s less than zero: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+            if(qubit_1 == qubit_2) {
+                fprintf(stderr, "Error: specified qubits in gate %s are equal: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+
             debug_printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
 
             // Normalize qubit order to ensure qubit_1 < qubit_2
@@ -417,6 +469,19 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing %s qubits\n", gate_type);
                 return;
             }
+            if(qubit_1 > qr->size || qubit_2 > qr->size) {
+                fprintf(stderr, "Error: specified qubit in gate %s is greater than the circuit size: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+            if(qubit_1 < 0 || qubit_2 < 0) {
+                fprintf(stderr, "Error: specified qubit in gate %s less than zero: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+            if(qubit_1 == qubit_2) {
+                fprintf(stderr, "Error: specified qubits in gate %s are equal: %d %d\n", gate_type, qubit_1, qubit_2);
+                return;
+            }
+
             debug_printf("Parsed CNOT gate for qubits %d and %d\n", qubit_1, qubit_2);
 
             // Handle non-adjacent or reverse-ordered CNOTs
@@ -522,7 +587,9 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing %s qubit\n", gate_type);
                 return;
             }
-
+            if(qubit_1 > qr->size) {
+                fprintf(stderr, "Error: specified qubit in gate is greater than the circuit size: %d\n", qubit_1);
+            }
             // Validate qubit index is non-negative
             if (qubit_1 < 0) {
                 fprintf(stderr, "Invalid qubit index for %s gate: must be non-negative\n", gate_type);
@@ -544,6 +611,10 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
             } else { // T gate
                 gate = create_t_gate();
             }
+            if (gate == NULL) {
+                fprintf(stderr, "Failed to generate %s gate\n", gate_type);
+                return;
+            }
             
             int *qubits = malloc(sizeof(int));
             qubits[0] = qubit_1;
@@ -555,7 +626,9 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Error parsing %s gate\n", gate_type);
                 return;
             }
-
+            if(qubit_1 > qr->size) {
+                fprintf(stderr, "Error: specified qubit in gate is greater than the circuit size: %d\n", qubit_1);
+            }
             // Validate qubit index is non-negative
             if (qubit_1 < 0) {
                 fprintf(stderr, "Invalid qubit index for %s gate: must be non-negative\n", gate_type);
@@ -572,6 +645,10 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 gate = create_rz_gate(angle);
             } else { // Phase gate
                 gate = create_phase_gate(angle);
+            }
+            if (gate == NULL) {
+                fprintf(stderr, "Failed to generate %s gate\n", gate_type);
+                return;
             }
 
             int *qubits = malloc(sizeof(int));
@@ -618,7 +695,7 @@ qreg *new_qreg(int size) {
     // Allocate memory for the quantum register
     qreg *qr = (qreg *)malloc(sizeof(qreg));
     if (qr == NULL) {
-        printf("Error allocating memory for quantum register.\n");
+        fprintf(stderr, "Error allocating memory for quantum register.\n");
         return NULL;
     }
 
@@ -629,7 +706,7 @@ qreg *new_qreg(int size) {
     int num_states = 1 << size; // 2^size
     qr->amp = (cnum *)malloc(num_states * sizeof(cnum));
     if (qr->amp == NULL) {
-        printf("Error allocating memory for state vector.\n");
+        fprintf(stderr, "Error allocating memory for state vector.\n");
         free(qr);
         return NULL;
     }
@@ -668,28 +745,36 @@ static void print_binary(int num, int bits) {
 }
 
 void view_state_vector(qreg *qr) {
-    int num_states = 1 << qr->size; // 2^size
+    if (qr) {
+        int num_states = 1 << qr->size; // 2^size
 
-    for (int i = 0; i < num_states; i++) {
-        // Get real and imaginary parts of the amplitude
-        double re = qr->amp[i].re;
-        double im = qr->amp[i].im;
+        for (int i = 0; i < num_states; i++) {
+            // Get real and imaginary parts of the amplitude
+            double re = qr->amp[i].re;
+            double im = qr->amp[i].im;
 
-        // Skip printing if the amplitude is zero
-        if (fabs(re) < 1e-6 && fabs(im) < 1e-6) {
-            continue;
+            // Skip printing if the amplitude is zero
+            if (fabs(re) < 1e-6 && fabs(im) < 1e-6) {
+                continue;
+            }
+
+            // Print the amplitude with Dirac notation
+            printf("(%.2f%s%.2fi)*|", re, (im >= 0) ? "+" : "", im);
+            print_binary(i, qr->size); // Print binary representation of the state
+            printf(">\n");
         }
-
-        // Print the amplitude with Dirac notation
-        printf("(%.2f%s%.2fi)*|", re, (im >= 0) ? "+" : "", im);
-        print_binary(i, qr->size); // Print binary representation of the state
-        printf(">\n");
+    }
+    else {
+        fprintf(stderr, "Error trying to view state vector on a null quantum register!\n");
     }
 }
 
 // Compute the tensor product of two matrices A (dimA x dimA) and B (dimB x dimB)
 cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
+    // TODO: check that cnum matrices are not null
+
     int dim_out = dimA * dimB;
+    // TODO: verify the allocation was a succes
     cnum **result = allocate_matrix(dim_out); // Allocate a dim_out x dim_out matrix
 
     debug_printf("Computing tensor product: %dx%d ⊗ %dx%d = %dx%d\n", dimA, dimA, dimB, dimB, dim_out, dim_out);
@@ -715,6 +800,7 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
 
 
 void print_gate_matrix(cnum **matrix, int size) {
+    // TODO: check that cnum matrices are not null
 #ifdef DEBUG_PRINTS
     printf("Gate matrix (%d x %d):\n", size, size);
     for (int i = 0; i < size; i++) {
@@ -731,11 +817,13 @@ void print_gate_matrix(cnum **matrix, int size) {
 
 
 cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
+    // TODO: check that gate is not null
+
     int gate_size = gate->size;  // Number of qubits the gate operates on
     cnum **expanded_matrix = NULL;
 
     // Start with an identity matrix for the expansion
-    expanded_matrix = allocate_matrix(1);
+    expanded_matrix = allocate_matrix(1); // TODO: verify that the allocation was a succes
     expanded_matrix[0][0].re = 1.0; // Start with a 1x1 identity element
 
     int target_index = 0;
@@ -800,6 +888,8 @@ cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
 
 
 cnum **multiply_matrices(cnum **A, cnum **B, int size) {
+    // TODO: check that cnum matrices are not null
+
     debug_printf("Multiplying matrices of size %d x %d\n", size, size);
     cnum **result = allocate_matrix(size);
     if (result == NULL) {
@@ -835,6 +925,8 @@ cnum **multiply_matrices(cnum **A, cnum **B, int size) {
 
 
 cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
+    // TODO: check that gates is not null
+
     debug_printf("Building full operator matrix for %d qubits\n", num_qubits);
     int full_size = 1 << num_qubits;  // 2^num_qubits
     cnum **full_matrix = allocate_matrix(full_size);
@@ -892,6 +984,7 @@ cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
 
 
 void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
+    // TODO verify that the inputs are not null before accessing their elements
     int num_states = 1 << qr->size; // 2^N for N qubits
     cnum *new_state = (cnum *)calloc(num_states, sizeof(cnum)); // Zero-initialize new state vector
 
@@ -930,6 +1023,8 @@ void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
 
 
 void apply_gate(qreg *qr, gate_list *gates) {
+    // TODO verify that the inputs are not null before accessing their elements
+
     // Build the full operator matrix for this circuit layer
 
     cnum **operator_matrix = build_full_operator_matrix(gates, qr->size);
@@ -950,6 +1045,14 @@ void apply_gate(qreg *qr, gate_list *gates) {
 
 
 void circuit_layer(qreg *qr, const char *operations) {
+    if (!qr) {
+        fprintf(stderr, "Error trying to evaluate a circuit layer on a null quantum register\n");
+        return;
+    }
+    if (!operations) {
+        fprintf(stderr, "Error trying to evaluate a circuit layer with a null operations list\n");
+        return;
+    }
     // Parse the operation string and populate the gate list
     parse_circuit_layer(qr, operations);
 }
