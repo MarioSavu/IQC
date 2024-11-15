@@ -14,11 +14,11 @@ In this repository I am writing from (almost) scratch a quantum simulation libra
 
 The quantum simulation library has APIs for:
 - Initializing an quantum register formed of N qubits (2^N complex numbers forming a state vector):
-  -- example: qreg *qr = new_qreg(8); (& free_qreg(qr); for when we're done with this register)
+  - example: qreg *qr = new_qreg(8); (& free_qreg(qr); for when we're done with this register)
 - Defining & evaluating the transformation after applying 1,2,..,n gates (in parallel), as a simulation "step"/"layer"/"level", over the state vector:
-  -- example: circuit_layer(qr, "SWP_1_2|X_0|H_6|CNOT_5_3|");
+  - example: circuit_layer(qr, "SWP_1_2|X_0|H_6|CNOT_5_3|");
 - "Measuring" the final (or really any intermediary) state:
-  -- example: view_state_vector(qr);
+  - example: view_state_vector(qr);
 
 The API could provide multiple ways of visualizing the states, right now it just supports this notation:
 (0.71+0.00i)*|00>
