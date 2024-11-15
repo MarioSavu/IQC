@@ -130,7 +130,8 @@ qgate *create_t_gate() {
     gate->size = 1;
     gate->matrix = allocate_matrix(2);
     gate->matrix[0][0] = (cnum){1, 0};
-    gate->matrix[1][1] = (cnum){cos(M_PI / 4), sin(M_PI / 4)};
+    // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*M_PI/4)
+    gate->matrix[1][1] = (cnum){cos(M_PI / 4), sin(M_PI / 4)};  
     return gate;
 }
 
@@ -163,6 +164,7 @@ qgate *create_rz_gate(double angle) {
     strncpy(gate->type, "RZ", sizeof(gate->type));
     gate->size = 1;
     gate->matrix = allocate_matrix(2);
+    // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*angle/2) & e^(-i*angle/2)
     gate->matrix[0][0] = (cnum){cos(angle / 2), -sin(angle / 2)};
     gate->matrix[1][1] = (cnum){cos(angle / 2), sin(angle / 2)};
     return gate;
