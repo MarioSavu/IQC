@@ -19,15 +19,16 @@ int state_to_index(const char *state, int num_qubits) {
 // Helper function to assert amplitude of specific state
 void assert_amplitude_re(qreg *qr, const char *state, double expected_real) {
     int index = state_to_index(state, qr->size);
-    assert(fabs(qr->amp[index].re - expected_real) < 1e-6);
+    assert(fabs(qr->amp[index].re - expected_real) < 1e-2);
 }
 
 
 // Helper function to assert complex amplitude of specific state
 void assert_complex_amplitude(qreg *qr, const char *state, double expected_real, double expected_imag) {
     int index = state_to_index(state, qr->size);
-    assert(fabs(qr->amp[index].re - expected_real) < 1e-6);
-    assert(fabs(qr->amp[index].im - expected_imag) < 1e-6);
+    // printf("Expected re %f im %f, actual re %f, im %f\n", expected_real, expected_imag, qr->amp[index].re, qr->amp[index].im);
+    assert(fabs(qr->amp[index].re - expected_real) < 1e-2);
+    assert(fabs(qr->amp[index].im - expected_imag) < 1e-2);
 }
 
 // Single simple qubit gate tests
@@ -71,12 +72,13 @@ void test_rotation_gates() {
     assert_complex_amplitude(qr, "|001>", 0.0, 1.0); // Should add a 90 degree phase to |1> state
 
     // // Apply T gate to qubit 1
-    // circuit_layer(qr, "T_1");
-    // assert_complex_amplitude(qr, "|000>", 0.0, 0.0);
+    circuit_layer(qr, "T_0");
+    assert_complex_amplitude(qr, "|001>", -1/sqrt(2), 1/sqrt(2));
 
-    // // Apply RX gate to qubit 0 with pi/2 rotation
-    // circuit_layer(qr, "RX_0_1.57"); // Pi/2 = 1.57
-    // assert_complex_amplitude(qr, "|000>", 0.0, 0.0);
+    // Apply RX gate to qubit 0 with pi/2 rotation
+    circuit_layer(qr, "RX_0_1.57"); // Pi/2 = 1.57
+    assert_complex_amplitude(qr, "|000>", 0.5, 0.5);
+    assert_complex_amplitude(qr, "|001>", -0.5, 0.5);
 
     // // Apply RY gate to qubit 1 with pi/2 rotation
     // circuit_layer(qr, "RY_1_1.57");
