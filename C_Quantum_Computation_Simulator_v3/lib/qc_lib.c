@@ -13,8 +13,6 @@
 #define debug_printf(...) ((void)0)
 #endif
 
-// TODO: add validation for all dynamic allocations & verify that all structure pointers are no null before accessing elements
-
 typedef struct quantum_gate {
     char type[10];    // Type of the gate (e.g., "X", "H", "CNOT", "SWP")
     int size;         // Number of qubits it’s applied to (1 or 2)
@@ -35,11 +33,19 @@ void apply_gate(qreg *qr, gate_list *gates);
 
 // Helper function to allocate a 2D matrix of complex numbers
 cnum **allocate_matrix(int size) {
-    // TODO: verify that malloc & calloc succeeded 
+    // Improvement: if there are allocation issues, first free previous allocations then return NULL
     if(size) {
         cnum **matrix = (cnum **)malloc(size * sizeof(cnum *));
+        if (matrix == NULL) {
+            fprintf(stderr, "Error allocating matrix in allocate_matrix\n");
+            return NULL;
+        }
         for (int i = 0; i < size; i++) {
             matrix[i] = (cnum *)calloc(size, sizeof(cnum)); // Zero-initialize each element
+            if (matrix[i] == NULL) {
+                fprintf(stderr, "Error zero-allocating each row of the new matrix\n");
+                return NULL;
+            }
         }
         return matrix;
     }
@@ -92,47 +98,83 @@ void clear_gate_list(gate_list *gates) {
 
 // Function to create a 2x2 identity matrix
 cnum **create_identity_matrix() {
-    cnum **matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    cnum **matrix = allocate_matrix(2);
+    if (matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for identity matrix\n");
+        return NULL;
+    }
     matrix[0][0] = (cnum){1, 0}; // 1 + 0i
     matrix[1][1] = (cnum){1, 0}; // 1 + 0i
     return matrix;
 }
 
 qgate *create_x_gate() {
-    qgate *gate = malloc(sizeof(qgate));  // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for Y gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "X", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for X gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][1] = (cnum){1, 0};
     gate->matrix[1][0] = (cnum){1, 0};
     return gate;
 }
 
 qgate *create_y_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for Y gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "Y", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for Y gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][1] = (cnum){0, -1};
     gate->matrix[1][0] = (cnum){0, 1};
     return gate;
 }
 
 qgate *create_z_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for Z gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "Z", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for Z gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){-1, 0};
     return gate;
 }
 
 qgate *create_h_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for H gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "H", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for H gate's matrix\n");
+        return NULL;
+    }
     double inv_sqrt_2 = 1.0 / sqrt(2.0);
     gate->matrix[0][0] = (cnum){inv_sqrt_2, 0};
     gate->matrix[0][1] = (cnum){inv_sqrt_2, 0};
@@ -142,20 +184,36 @@ qgate *create_h_gate() {
 }
 
 qgate *create_s_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for S gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "S", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for S gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){0, 1};
     return gate;
 }
 
 qgate *create_t_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for T gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "T", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for T gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*M_PI/4)
     gate->matrix[1][1] = (cnum){cos(M_PI / 4), sin(M_PI / 4)};  
@@ -163,10 +221,18 @@ qgate *create_t_gate() {
 }
 
 qgate *create_rx_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RX gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "RX", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RX gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
     gate->matrix[0][1] = (cnum){0, -sin(angle / 2)};
     gate->matrix[1][0] = (cnum){0, -sin(angle / 2)};
@@ -175,10 +241,18 @@ qgate *create_rx_gate(double angle) {
 }
 
 qgate *create_ry_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RY gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "RY", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RY gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){cos(angle / 2), 0};
     gate->matrix[0][1] = (cnum){-sin(angle / 2), 0};
     gate->matrix[1][0] = (cnum){sin(angle / 2), 0};
@@ -187,10 +261,18 @@ qgate *create_ry_gate(double angle) {
 }
 
 qgate *create_rz_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RZ gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "RZ", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for RZ gate's matrix\n");
+        return NULL;
+    }
     // I got the values below using Euler's formula, to avoid having to write a complex number power function for e^(i*angle/2) & e^(-i*angle/2)
     gate->matrix[0][0] = (cnum){cos(angle / 2), -sin(angle / 2)};
     gate->matrix[1][1] = (cnum){cos(angle / 2), sin(angle / 2)};
@@ -198,20 +280,36 @@ qgate *create_rz_gate(double angle) {
 }
 
 qgate *create_phase_gate(double angle) {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for P gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "P", sizeof(gate->type));
     gate->size = 1;
-    gate->matrix = allocate_matrix(2); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(2);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for P gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){cos(angle), sin(angle)};
     return gate;
 }
 
 qgate *create_cnot_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for CNOT gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "CNOT", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(4);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for CNOT gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][1] = (cnum){1, 0};
     gate->matrix[2][3] = (cnum){1, 0};
@@ -220,10 +318,18 @@ qgate *create_cnot_gate() {
 }
 
 qgate *create_reverse_cnot_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for CNOT gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "RCNOT", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(4);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for CNOT gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][3] = (cnum){1, 0};
     gate->matrix[2][2] = (cnum){1, 0};
@@ -232,10 +338,18 @@ qgate *create_reverse_cnot_gate() {
 }
 
 qgate *create_swap_gate() {
-    qgate *gate = malloc(sizeof(qgate)); // TODO: validate that it's not NULL
+    qgate *gate = malloc(sizeof(qgate));
+    if (gate == NULL) {
+        fprintf(stderr, "Failed to allocate memory for SWP gate\n");
+        return NULL;
+    }
     strncpy(gate->type, "SWP", sizeof(gate->type));
     gate->size = 2;
-    gate->matrix = allocate_matrix(4); // TODO: validate that it's not NULL
+    gate->matrix = allocate_matrix(4);
+    if (gate->matrix == NULL) {
+        fprintf(stderr, "Failed to allocate memory for SWP gate's matrix\n");
+        return NULL;
+    }
     gate->matrix[0][0] = (cnum){1, 0};
     gate->matrix[1][2] = (cnum){1, 0};
     gate->matrix[2][1] = (cnum){1, 0};
@@ -771,11 +885,17 @@ void view_state_vector(qreg *qr) {
 
 // Compute the tensor product of two matrices A (dimA x dimA) and B (dimB x dimB)
 cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
-    // TODO: check that cnum matrices are not null
-
+    if(A == NULL || B == NULL) {
+        fprintf(stderr, "Error trying to do tensor product with at least 1 NULL matrix\n");
+        return NULL;
+    }
+    
     int dim_out = dimA * dimB;
-    // TODO: verify the allocation was a succes
     cnum **result = allocate_matrix(dim_out); // Allocate a dim_out x dim_out matrix
+    if(result == NULL) {
+        fprintf(stderr, "Error allocating matrix for tensor product\n");
+        return NULL;
+    }
 
     debug_printf("Computing tensor product: %dx%d ⊗ %dx%d = %dx%d\n", dimA, dimA, dimB, dimB, dim_out, dim_out);
 
@@ -800,7 +920,10 @@ cnum **tensor_product(cnum **A, int dimA, cnum **B, int dimB) {
 
 
 void print_gate_matrix(cnum **matrix, int size) {
-    // TODO: check that cnum matrices are not null
+    if(matrix == NULL) {
+        fprintf(stderr, "Error printing a NULL matrix\n");
+        return;
+    }
 #ifdef DEBUG_PRINTS
     printf("Gate matrix (%d x %d):\n", size, size);
     for (int i = 0; i < size; i++) {
@@ -817,13 +940,20 @@ void print_gate_matrix(cnum **matrix, int size) {
 
 
 cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
-    // TODO: check that gate is not null
+    if (gate == NULL) {
+        fprintf(stderr, "Error expanding a NULL gate\n");
+        return NULL;
+    }
 
     int gate_size = gate->size;  // Number of qubits the gate operates on
     cnum **expanded_matrix = NULL;
 
     // Start with an identity matrix for the expansion
-    expanded_matrix = allocate_matrix(1); // TODO: verify that the allocation was a succes
+    expanded_matrix = allocate_matrix(1);
+    if (expanded_matrix == NULL) {
+        fprintf(stderr, "Error allocating the first expansion matrix\n");
+        return NULL;
+    }
     expanded_matrix[0][0].re = 1.0; // Start with a 1x1 identity element
 
     int target_index = 0;
@@ -864,6 +994,10 @@ cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
         // Compute the tensor product with the current expanded matrix so far
         int expanded_size = 1 << expanded_qubits;  // Size of the expanded matrix so far
         cnum **temp_matrix = tensor_product(expanded_matrix, expanded_size, current_matrix, current_matrix_size);
+        if(temp_matrix == NULL) {
+            fprintf(stderr, "Error calculating tensor product\n");
+            return NULL;
+        }
 
         // Free the old expanded matrix if it wasn't the gate itself
         if (expanded_matrix != gate->matrix) {
@@ -888,7 +1022,10 @@ cnum **expand_gate_matrix(qgate *gate, int num_qubits, int *target_qubits) {
 
 
 cnum **multiply_matrices(cnum **A, cnum **B, int size) {
-    // TODO: check that cnum matrices are not null
+    if (A == NULL || B == NULL) {
+        fprintf(stderr, "Error mulplitying matrices with at least 1 NULL matrix\n");
+        return NULL;
+    }
 
     debug_printf("Multiplying matrices of size %d x %d\n", size, size);
     cnum **result = allocate_matrix(size);
@@ -925,7 +1062,10 @@ cnum **multiply_matrices(cnum **A, cnum **B, int size) {
 
 
 cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
-    // TODO: check that gates is not null
+    if (gates == NULL) {
+        fprintf(stderr, "Error building full operator matrix for NULL gates list\n");
+        return NULL;
+    }
 
     debug_printf("Building full operator matrix for %d qubits\n", num_qubits);
     int full_size = 1 << num_qubits;  // 2^num_qubits
@@ -984,7 +1124,11 @@ cnum **build_full_operator_matrix(gate_list *gates, int num_qubits) {
 
 
 void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
-    // TODO verify that the inputs are not null before accessing their elements
+    if (qr == NULL || operator_matrix == NULL) {
+        fprintf(stderr, "Error trying to apply operator to state, with NULL inputs\n");
+        return;
+    }
+
     int num_states = 1 << qr->size; // 2^N for N qubits
     cnum *new_state = (cnum *)calloc(num_states, sizeof(cnum)); // Zero-initialize new state vector
 
@@ -1023,11 +1167,18 @@ void apply_operator_to_state(qreg *qr, cnum **operator_matrix) {
 
 
 void apply_gate(qreg *qr, gate_list *gates) {
-    // TODO verify that the inputs are not null before accessing their elements
+    if (qr == NULL || gates == NULL) {
+        fprintf(stderr, "Error applying gate with NULL inputs\n");
+        return;
+    }
 
     // Build the full operator matrix for this circuit layer
 
     cnum **operator_matrix = build_full_operator_matrix(gates, qr->size);
+    if (operator_matrix == NULL) {
+        fprintf(stderr, "Error obtaining full operator matrix\n");
+        return;
+    }
     debug_printf("Built following full matrix:\n");
     print_gate_matrix(operator_matrix, 1<<(qr->size));
 

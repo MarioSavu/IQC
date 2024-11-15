@@ -34,7 +34,6 @@ To build & execute this project use the (TODO) Makefile's following commands:
 ----
 TODO:
 - Update the build system as needed, based on the evolving folder structures (Maybe a root make file and individual Makefiles in each project/example/test?)
-- Finish the TODO's in qc_lib.c
 - Document how to build & run things, and how to use the API
 - Add more test cases (with proper asserts), and a way to automatically run and test things on new builds (a script in the parent folder of the tests that builds, runs & evaluates all the results?)
 - Prepare some "How-To" examples and showcase in the readme, maybe some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor), and organize things in proper folders (lib, regression_tests, HowTo for basic API, demos & maybe a playground/scratchpad folder/file somewhere)
