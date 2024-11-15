@@ -2,7 +2,8 @@
 #define QC_LIB_H
 
 // Public API
-#define QUBIT_REGISTER_LIMIT 16
+#define QUBIT_REGISTER_LIMIT 12
+// #define PRINT_LSB_LEFT
 
 typedef struct complex_number {
     double re, im; 

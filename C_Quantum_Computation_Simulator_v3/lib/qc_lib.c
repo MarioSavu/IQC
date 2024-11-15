@@ -13,8 +13,6 @@
 #define debug_printf(...) ((void)0)
 #endif
 
-#define PRINT_LSB_LEFT
-
 // TODO: more input validation, e.g. check if qr exists (not NULL) in all functions
 // Enforce validation in test apps & main app also
 
@@ -299,8 +297,6 @@ qgate *generate_dynamic_ccnot(int num_qubits, int control_1, int control_2, int 
     int adjusted_control_1 = control_1 - min_qubit;
     int adjusted_control_2 = control_2 - min_qubit;
     int adjusted_target = target - min_qubit;
-    int min_control_qubit = adjusted_control_1 < adjusted_control_2 ? adjusted_control_1 : adjusted_control_2; 
-
 
     debug_printf("Adjusted control_1 = %d, ctrl 2 = %d, target = %d\n", adjusted_control_1, adjusted_control_2, adjusted_target);
 
