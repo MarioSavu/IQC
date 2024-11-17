@@ -8,7 +8,7 @@ int state_to_index(const char *state, int num_qubits) {
     int index = 0;
     int state_it;
     for (int i = 0; i < num_qubits; i++) {
-        state_it = num_qubits - i;
+        state_it = i+1; // Skip the '|' at the beginning of the state string
         if (state[state_it] == '1') {
             index |= (1 << (num_qubits - i - 1));
         }
@@ -195,8 +195,8 @@ void test_parallel_gates() {
     circuit_layer(qr, "H_0|H_1|H_2");
 
     // Apply X gate to the first qubit, nothing on the 2nd, and an H gate on the third
-    circuit_layer(qr, "X_0|H_2");
-    assert_amplitude_re(qr, "|001>", 1/sqrt(2));
+    circuit_layer(qr, "X_2|H_0");
+    assert_amplitude_re(qr, "|100>", 1/sqrt(2));
     assert_amplitude_re(qr, "|101>", 1/sqrt(2));
 
 
