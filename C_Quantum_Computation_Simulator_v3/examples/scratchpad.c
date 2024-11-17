@@ -43,7 +43,7 @@ int main() {
 
     printf("Initial state vector:\n");
     view_state_vector(qr);printf("\n");
-    char gate_step_0[] = "H_0|H_1";
+    char gate_step_0[] = "H_3|H_1";
     circuit_layer(qr, gate_step_0);
     printf("State vector after applying the following gates: %s\n", gate_step_0);
     view_state_vector(qr);printf("\n");

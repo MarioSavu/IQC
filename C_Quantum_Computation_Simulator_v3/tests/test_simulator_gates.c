@@ -212,6 +212,6 @@ int main() {
     test_parallel_gates();
     test_rotation_gates();
 
-    printf("All tests passed successfully.\n");
+    printf("All simulator gate tests passed successfully.\n");
     return 0;
 }

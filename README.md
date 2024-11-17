@@ -25,20 +25,35 @@ The API could provide multiple ways of visualizing the states, right now it just
 (0.00+0.00i)*|01>
 (0.00+0.00i)*|10>
 (0.71+0.00i)*|11>
-The output values can be viewed with the least significant qubit being either positioned on the right or left, and this is controllable through a define in qc_lib.h called PRINT_LSB_LEFT that can be added to the project.
+The library assumed that the right-most qubit is qubit-0, and as a consequence:
+- the output values can only be viewed with the least significant qubit being positioned on the right-most position
+- indexing qubits will be done as such when applying gates: for example an X gate on qubit 0 in a 2 qubit register, initialized from |00>, will lead to |01>.
+
+Note: Quantum states that have zero amplitude will not be shown when viewing the state of a register.
 
 ---
-To build & execute this project use the (TODO) Makefile's following commands:
+To build & execute this library & the examples, use the Makefile's following commands:
+make clean - cleans the /build directory
+make all - builds the library, the examples & all the tests, and places them under a /build directory
+make test - builds & runs the tests (useful for manual regression testing)
 
+After running "make all", you can find an executable linked file under /build for all the examples & tests that are currently written. 
+Simply calling "make all" followed by "./build/bell_state" will for example build & run the bell_state example.
 
-----
+For a quick test, just modify the contents of examples/scratchpad.c, call "make all", and run ./build/scratchpad to run your test.
+
+---
+Current examples:
+bell_state.c - simplest example that shows how declare a quantum register, how to use the API to apply a Hadamard gate followed by a Controlled-Not Gate to generate a bell state, and how to view the final state
+grover_search.c - the most complicated example that shows a grover's search on 2 qubits, for state |01>, demonstrating both sequencial and parallel gate application & intermediary simulator state outputting
+figure_4_1.c & figure_4_3.c - example circuits from the first laboratories
+scratchpad.c - a file to used for verifying anything & developing everything
+
+---
 TODO:
 - Update the build system as needed, based on the evolving folder structures (Maybe a root make file and individual Makefiles in each project/example/test?)
-- Document how to build & run things, and how to use the API
-- Add more test cases (with proper asserts), and a way to automatically run and test things on new builds (a script in the parent folder of the tests that builds, runs & evaluates all the results?)
-- Prepare some "How-To" examples and showcase in the readme, maybe some of our lab circuits, maybe even some of the more complex algorithms (e.g. Grover, Shor), and organize things in proper folders (lib, regression_tests, HowTo for basic API, demos & maybe a playground/scratchpad folder/file somewhere)
 - Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing full API functionality in a simple language for people that don't like C
 
 ---
-Current version, v3, supports all the gates mentioned above (TODO: test the rotation, s, t & phase gates).
+Current version, v3, supports all the gates mentioned above.
 It should be stable and can be used.

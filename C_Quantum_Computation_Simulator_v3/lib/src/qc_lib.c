@@ -868,11 +868,7 @@ void free_qreg(qreg *qr) {
 
 // Helper function to print binary representation of a basis state
 static void print_binary(int num, int bits) {
-#ifdef PRINT_MSB_LEFT
     for (int i = bits - 1; i >= 0; i--) {
-#else
-    for (int i = 0; i <= bits - 1; i++) {
-#endif
         printf("%d", (num >> i) & 1);
     }
 }
