@@ -54,6 +54,3 @@ TODO:
 - Update the build system as needed, based on the evolving folder structures (Maybe a root make file and individual Makefiles in each project/example/test?)
 - Maybe play around with the C preprocessor to define a more "natural" syntax for using this API, (ab)using the preprocessing as a parser & interpreter, exposing full API functionality in a simple language for people that don't like C
 
----
-Current version, v3, supports all the gates mentioned above.
-It should be stable and can be used.
