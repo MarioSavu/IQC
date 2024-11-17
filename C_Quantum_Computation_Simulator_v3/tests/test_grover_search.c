@@ -16,12 +16,12 @@ void grover_search_second_object() {
     printf("State |psi0>:\n");
     view_state_vector(qr);printf("\n");
 
-    // Then we begin our sqrt(4)=2 iterations to find our desired qubit
-    for(int it = 0; it < 2; it++) {
+    // Then we begin our iterations to find our desired qubit, in this case just once?
+    for(int it = 0; it < 1; it++) {
         // Let's build and apply our chosen oracle, for the 2nd object:
-        circuit_layer(qr, "X_0");
+        circuit_layer(qr, "X_1");
         circuit_layer(qr, "CCNOT_0_1_2");
-        circuit_layer(qr, "X_0");
+        circuit_layer(qr, "X_1");
         // View the state (for the homework "computation" exercise)
         printf("State |psi1>, %d time:\n", it);
         view_state_vector(qr);printf("\n");
@@ -44,6 +44,8 @@ void grover_search_second_object() {
         printf("State after finishing the diffusion operator %d times:\n", it);
         view_state_vector(qr);printf("\n");
     }
+    // Set the third qubit back to 0, by applying X gate again
+    circuit_layer(qr, "X_2");
 
     printf("Final state:\n");
     view_state_vector(qr);printf("\n");
@@ -58,150 +60,41 @@ int main() {
 }
 
 /*
-QASM 2.0 reference:
 OPENQASM 2.0;
 include "qelib1.inc";
 
 qreg q[3];
-
-
 x q[2];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-h q[0];
+barrier q;
 h q[1];
+h q[0];
 h q[2];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-x q[0];
+barrier q;
+x q[1];
+barrier q;
 ccx q[0], q[1], q[2];
-x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
+barrier q;
+x q[1];
+barrier q;
 h q[0];
 h q[1];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-x q[1];
+barrier q;
 x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
+x q[1];
+barrier q;
 h q[1];
+barrier q;
 cx q[0], q[1];
+barrier q;
 h q[1];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-x q[1];
+barrier q;
 x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
+x q[1];
+barrier q;
 h q[0];
 h q[1];
 h q[2];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-
-x q[0];
-ccx q[0], q[1], q[2];
-x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-h q[0];
-h q[1];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-x q[1];
-x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-h q[1];
-cx q[0], q[1];
-h q[1];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-x q[1];
-x q[0];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-h q[0];
-h q[1];
-h q[2];
-barrier q[1];
-barrier q[0];
-barrier q[2];
-*/
-
-/*
-QASM 3.0 reference:
-OPENQASM 3;
-include 'customgates.inc';
-
-bit[3] c;
-qubit[3] q;
-
+barrier q;
 x q[2];
-barrier;
-h q[0];
-h q[1];
-h q[2];
-barrier;
-x q[0];
-ccx q[0], q[1], q[2];
-x q[0];
-barrier;
-h q[0];
-h q[1];
-barrier;
-x q[1];
-x q[0];
-barrier;
-h q[1];
-cx q[0], q[1];
-h q[1];
-barrier;
-x q[1];
-x q[0];
-barrier;
-h q[0];
-h q[1];
-h q[2];
-barrier;
-x q[0];
-ccx q[0], q[1], q[2];
-x q[0];
-barrier;
-h q[0];
-h q[1];
-barrier;
-x q[1];
-x q[0];
-barrier;
-h q[1];
-cx q[0], q[1];
-h q[1];
-barrier;
-x q[1];
-x q[0];
-barrier;
-h q[0];
-h q[1];
-h q[2];
-barrier;
-
-c[0] = measure q[0];
-c[1] = measure q[1];
-c[2] = measure q[2];
+barrier q;
 */
