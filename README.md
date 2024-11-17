@@ -34,13 +34,13 @@ Note: Quantum states that have zero amplitude will not be shown when viewing the
 ---
 To build & execute this library & the examples, use the Makefile's following commands:
 make clean - cleans the /build directory
-make all - builds the library, the examples & all the tests, and places them under a /build directory
+make all - builds the library, as well as all the the example and test sources found in examples/ & tests/ by creating .elf files next to the sources  
 make test - builds & runs the tests (useful for manual regression testing)
 
-After running "make all", you can find an executable linked file under /build for all the examples & tests that are currently written. 
-Simply calling "make all" followed by "./build/bell_state" will for example build & run the bell_state example.
+After running "make all", you can find .elf files under /tests & /examples for all the examples & tests that are currently written. 
+Simply calling "make all" followed by "./examples/bell_state" will for example build & run the bell_state example.
 
-For a quick test, just modify the contents of examples/scratchpad.c, call "make all", and run ./build/scratchpad to run your test.
+For a quick test, just modify the contents of examples/scratchpad.c, call "make all", and run ./examples/scratchpad to run your test.
 
 ---
 Current examples:

@@ -1,45 +1,57 @@
+# Compiler and flags
 CC = gcc
 CFLAGS = -Wall -g -Ilib/include -lm
-BUILD_DIR = build
+
+# Directories
 SRC_DIR = lib/src
-TEST_DIR = tests
-EXAMPLE_DIR = examples
+INCLUDE_DIR = lib/include
+BUILD_DIR = build
+LIB_DIR = $(BUILD_DIR)/lib
+OBJ_DIR = $(BUILD_DIR)/obj
+EXAMPLES_DIR = examples
+TESTS_DIR = tests
 
+# Library
+LIB = $(LIB_DIR)/libqc.a
+
+# Source files and objects
 SRC_FILES = $(wildcard $(SRC_DIR)/*.c)
-TEST_FILES = $(wildcard $(TEST_DIR)/*.c)
-EXAMPLE_FILES = $(wildcard $(EXAMPLE_DIR)/*.c)
+OBJ_FILES = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC_FILES))
 
-OBJ_FILES = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(SRC_FILES))
-TEST_EXECUTABLES = $(patsubst $(TEST_DIR)/%.c, $(BUILD_DIR)/%, $(TEST_FILES))
-EXAMPLE_EXECUTABLES = $(patsubst $(EXAMPLE_DIR)/%.c, $(BUILD_DIR)/%, $(EXAMPLE_FILES))
+# Examples and tests
+EXAMPLES = $(patsubst $(EXAMPLES_DIR)/%.c, $(EXAMPLES_DIR)/%.elf, $(wildcard $(EXAMPLES_DIR)/*.c))
+TESTS = $(patsubst $(TESTS_DIR)/%.c, $(TESTS_DIR)/%.elf, $(wildcard $(TESTS_DIR)/*.c))
 
-# Default target to build everything
-all: $(BUILD_DIR)/libqc.a $(TEST_EXECUTABLES) $(EXAMPLE_EXECUTABLES)
+.PHONY: all clean test
 
-# Create static library
-$(BUILD_DIR)/libqc.a: $(OBJ_FILES)
+# Default target: build everything
+all: $(LIB) $(EXAMPLES) $(TESTS)
+
+# Build the static library
+$(LIB): $(OBJ_FILES)
+	@mkdir -p $(LIB_DIR)
 	ar rcs $@ $^
 
-# Compile source files
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
+# Compile object files from source files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Compile tests and link against the library
-$(BUILD_DIR)/%: $(TEST_DIR)/%.c $(BUILD_DIR)/libqc.a
-	$(CC) $(CFLAGS) $< -L$(BUILD_DIR) -lqc -o $@
+# Build example executables
+$(EXAMPLES_DIR)/%.elf: $(EXAMPLES_DIR)/%.c $(LIB)
+	$(CC) $(CFLAGS) $< -L$(LIB_DIR) -lqc -o $@
 
-# Compile examples and link against the library
-$(BUILD_DIR)/%: $(EXAMPLE_DIR)/%.c $(BUILD_DIR)/libqc.a
-	$(CC) $(CFLAGS) $< -L$(BUILD_DIR) -lqc -o $@
+# Build test executables
+$(TESTS_DIR)/%.elf: $(TESTS_DIR)/%.c $(LIB)
+	$(CC) $(CFLAGS) $< -L$(LIB_DIR) -lqc -o $@
 
-# Run all tests
-test: $(TEST_EXECUTABLES)
-	@for test in $(TEST_EXECUTABLES); do \
-		echo "Running $$test..."; \
+# Run all test executables
+test: $(TESTS)
+	@for test in $(TESTS); do \
+		echo "Running $$test"; \
 		./$$test; \
 	done
 
-# Clean all compiled files
+# Clean up build artifacts
 clean:
-	rm -rf $(BUILD_DIR)/*
+	rm -rf $(BUILD_DIR) $(EXAMPLES_DIR)/*.elf $(TESTS_DIR)/*.elf
