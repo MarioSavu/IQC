@@ -512,6 +512,11 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
             }
             debug_printf("Parsed CCNOT gate for control qubits %d, %d and target qubit %d\n", qubit_1, qubit_2, qubit_3);
 
+            // Re-order qubit index
+            qubit_1 = (qr->size - 1) - qubit_1;
+            qubit_2 = (qr->size - 1) - qubit_2;
+            qubit_3 = (qr->size - 1) - qubit_3;
+
             // Generate dynamic CCNOT gate
             int max_gate_qbit, min_gate_qbit;
             max_gate_qbit = (qubit_1 > qubit_2) ? ((qubit_1 > qubit_3) ? qubit_1 : qubit_3) : ((qubit_2 > qubit_3) ? qubit_2 : qubit_3); 
@@ -549,6 +554,10 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
             }
 
             debug_printf("Parsed SWP gate for qubits %d and %d\n", qubit_1, qubit_2);
+
+            // Re-order qubit index
+            qubit_1 = (qr->size - 1) - qubit_1;
+            qubit_2 = (qr->size - 1) - qubit_2;
 
             // Normalize qubit order to ensure qubit_1 < qubit_2
             if (qubit_1 > qubit_2) {
@@ -597,6 +606,10 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
             }
 
             debug_printf("Parsed CNOT gate for qubits %d and %d\n", qubit_1, qubit_2);
+
+            // Re-order qubit index
+            qubit_1 = (qr->size - 1) - qubit_1;
+            qubit_2 = (qr->size - 1) - qubit_2;
 
             // Handle non-adjacent or reverse-ordered CNOTs
             if (abs(qubit_1 - qubit_2) != 1 || qubit_1 > qubit_2) {
@@ -710,6 +723,9 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 return;
             }
 
+            // Re-order qubit index
+            qubit_1 = (qr->size - 1) - qubit_1;
+
             // Create gate and add to circuit
             qgate *gate;
             if (strcmp(gate_type, "X") == 0) {
@@ -748,6 +764,9 @@ void parse_circuit_layer(qreg *qr, const char *operations) {
                 fprintf(stderr, "Invalid qubit index for %s gate: must be non-negative\n", gate_type);
                 return;
             }
+
+            // Re-order qubit index
+            qubit_1 = (qr->size - 1) - qubit_1;
 
             // Create gate and add to circuit
             qgate *gate;
@@ -849,7 +868,7 @@ void free_qreg(qreg *qr) {
 
 // Helper function to print binary representation of a basis state
 static void print_binary(int num, int bits) {
-#ifdef PRINT_LSB_LEFT
+#ifdef PRINT_MSB_LEFT
     for (int i = bits - 1; i >= 0; i--) {
 #else
     for (int i = 0; i <= bits - 1; i++) {
