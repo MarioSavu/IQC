@@ -44,10 +44,10 @@ For a quick test, just modify the contents of examples/scratchpad.c, call "make 
 
 ---
 Current examples:
-bell_state.c - simplest example that shows how declare a quantum register, how to use the API to apply a Hadamard gate followed by a Controlled-Not Gate to generate a bell state, and how to view the final state
-grover_search.c - the most complicated example that shows a grover's search on 2 qubits, for state |01>, demonstrating both sequencial and parallel gate application & intermediary simulator state outputting
-figure_4_1.c & figure_4_3.c - example circuits from the first laboratories
-scratchpad.c - a file to used for verifying anything & developing everything
+- bell_state.c - simplest example that shows how declare a quantum register, how to use the API to apply a Hadamard gate followed by a Controlled-Not Gate to generate a bell state, and how to view the final state
+- grover_search.c - the most complicated example that shows a grover's search on 2 qubits, for state |01>, demonstrating both sequencial and parallel gate application & intermediary simulator state outputting
+- figure_4_1.c & figure_4_3.c - example circuits from the first laboratories
+- scratchpad.c - a file to used for verifying anything & developing everything
 
 ---
 TODO:
